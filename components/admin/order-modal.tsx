@@ -11,7 +11,13 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUSES, SERVICE_TYPE_LABELS, SERVICE_TYPES } from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
-import { buildOrderCode, buildOrderImageProxyUrl } from "@/lib/utils";
+import {
+  buildOrderCode,
+  buildOrderImageProxyUrl,
+  calculateRemainingAmount,
+  formatAmountInputValue,
+  formatAmountWithCurrency,
+} from "@/lib/utils";
 import { orderSchema } from "@/lib/validators";
 import type { z } from "zod";
 
@@ -34,6 +40,8 @@ const defaultValues: OrderFormInput = {
   status: "تم الحجز",
   notes: "",
   images: [],
+  total_amount: "0",
+  received_amount: "0",
 };
 
 export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalProps) {
@@ -52,6 +60,9 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
 
   const phone = useWatch({ control, name: "phone" });
   const images = useWatch({ control, name: "images" }) ?? [];
+  const totalAmountInput = useWatch({ control, name: "total_amount" }) ?? "0";
+  const receivedAmountInput = useWatch({ control, name: "received_amount" }) ?? "0";
+  const remainingAmount = calculateRemainingAmount(totalAmountInput, receivedAmountInput);
 
   useEffect(() => {
     if (!open) {
@@ -68,6 +79,8 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             status: order.status,
             notes: order.notes,
             images: order.images,
+            total_amount: formatAmountInputValue(order.total_amount),
+            received_amount: formatAmountInputValue(order.received_amount),
           }
         : defaultValues,
     );
@@ -156,6 +169,44 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
               <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-4">
                 <p className="mb-2 text-sm text-ajn-goldSoft">معاينة الكود</p>
                 <p className="text-2xl font-bold text-white">{buildOrderCode(phone || "0000")}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm text-ajn-goldSoft">المبلغ الكلي</label>
+                <Input
+                  {...register("total_amount")}
+                  placeholder="مثال: 120000"
+                  inputMode="decimal"
+                  dir="ltr"
+                />
+                {errors.total_amount ? (
+                  <p className="mt-2 text-sm text-red-300">{errors.total_amount.message}</p>
+                ) : null}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-ajn-goldSoft">المبلغ الواصل</label>
+                <Input
+                  {...register("received_amount")}
+                  placeholder="مثال: 50000"
+                  inputMode="decimal"
+                  dir="ltr"
+                />
+                {errors.received_amount ? (
+                  <p className="mt-2 text-sm text-red-300">{errors.received_amount.message}</p>
+                ) : null}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-ajn-goldSoft">المبلغ المتبقي</label>
+                <Input
+                  value={formatAmountWithCurrency(remainingAmount)}
+                  readOnly
+                  className="border-ajn-gold/20 bg-ajn-gold/[0.08] text-ajn-gold focus:border-ajn-gold/20 focus:bg-ajn-gold/[0.08]"
+                />
+                <p className="mt-2 text-xs text-ajn-muted">يُحسب تلقائيًا من المبلغ الكلي والواصل.</p>
               </div>
             </div>
 

@@ -13,6 +13,9 @@ export interface OrderRecord {
   status: OrderStatus;
   notes: string;
   images: string[];
+  total_amount: number;
+  received_amount: number;
+  remaining_amount: number;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +28,9 @@ export interface OrderFormValues {
   status: OrderStatus;
   notes: string;
   images: string[];
+  total_amount: number;
+  received_amount: number;
+  remaining_amount: number;
 }
 
 export interface AdminTokenPayload {

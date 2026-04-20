@@ -4,9 +4,6 @@ function getServerSupabaseEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  console.log("SUPABASE URL exists:", !!url);
-  console.log("SUPABASE SERVICE ROLE exists:", !!serviceRoleKey);
-
   if (!url || !serviceRoleKey) {
     throw new Error("Supabase server environment variables are not configured.");
   }

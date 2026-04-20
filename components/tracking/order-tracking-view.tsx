@@ -8,6 +8,7 @@ import type { OrderRecord } from "@/lib/types";
 import {
   buildOrderImageProxyUrl,
   buildWhatsAppUrl,
+  formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
   maskPhone,
@@ -57,6 +58,27 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
               <p className="leading-8 text-ajn-ivory">
                 {order.notes || "لا توجد ملاحظات مضافة على هذا الطلب حتى الآن."}
               </p>
+            </div>
+
+            <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5">
+              <p className="mb-4 text-sm text-ajn-goldSoft">الحالة المالية</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <InfoCard
+                  icon={<span className="text-xs font-semibold">IQD</span>}
+                  label="المبلغ الكلي"
+                  value={formatAmountWithCurrency(order.total_amount)}
+                />
+                <InfoCard
+                  icon={<span className="text-xs font-semibold">IQD</span>}
+                  label="المبلغ الواصل"
+                  value={formatAmountWithCurrency(order.received_amount)}
+                />
+                <InfoCard
+                  icon={<span className="text-xs font-semibold">IQD</span>}
+                  label="المبلغ المتبقي"
+                  value={formatAmountWithCurrency(order.remaining_amount)}
+                />
+              </div>
             </div>
 
             {whatsappUrl ? (

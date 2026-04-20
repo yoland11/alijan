@@ -1,10 +1,11 @@
-export const SERVICE_TYPES = ["Album", "Session", "Koshat", "Gifts"] as const;
+export const SERVICE_TYPES = ["Album", "Session", "Koshat", "Gifts", "Research"] as const;
 
 export const SERVICE_TYPE_LABELS: Record<(typeof SERVICE_TYPES)[number], string> = {
   Album: "ألبوم",
   Session: "جلسة تصوير",
   Koshat: "كوشات",
   Gifts: "هدايا",
+  Research: "بحوث",
 };
 
 export const ORDER_STATUSES = [

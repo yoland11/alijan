@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select";
 import { COMPLETED_STATUSES, DASHBOARD_STATUS_FILTERS, ORDER_STATUSES } from "@/lib/constants";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { OrderRecord } from "@/lib/types";
-import { buildCustomerOrderWhatsAppUrl } from "@/lib/utils";
+import { buildCompletedOrderWhatsAppUrl, buildCustomerOrderWhatsAppUrl } from "@/lib/utils";
 import type { OrderSchema } from "@/lib/validators";
 
 export function DashboardClient() {
@@ -74,7 +74,15 @@ export function DashboardClient() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       !searchTerm ||
-      [order.name, order.phone, order.order_code, order.notes]
+      [
+        order.name,
+        order.phone,
+        order.order_code,
+        order.notes,
+        order.total_amount,
+        order.received_amount,
+        order.remaining_amount,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -172,6 +180,26 @@ export function DashboardClient() {
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
 
+  const openCompletedOrderWhatsApp = (order: OrderRecord) => {
+    if (order.status !== "مكتمل") {
+      toast.error("إشعار الاكتمال يظهر فقط عندما تكون حالة الطلب مكتمل.");
+      return;
+    }
+
+    const whatsappUrl = buildCompletedOrderWhatsAppUrl(order);
+
+    if (!whatsappUrl) {
+      toast.error("رقم الزبون غير صالح لإرسال إشعار الاكتمال.");
+      return;
+    }
+
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const openInvoicePrint = (order: OrderRecord) => {
+    window.open(`/admin/invoices/${order.id}?print=1`, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <>
       <div className="page-shell pb-16 pt-10">
@@ -263,7 +291,9 @@ export function DashboardClient() {
                 setModalOpen(true);
               }}
               onDelete={deleteOrder}
-              onWhatsApp={openCustomerWhatsApp}
+              onTrackingWhatsApp={openCustomerWhatsApp}
+              onCompletionWhatsApp={openCompletedOrderWhatsApp}
+              onPrintInvoice={openInvoicePrint}
             />
           )}
         </div>
