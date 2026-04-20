@@ -63,7 +63,6 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
                   مجموعة علي جان نهاد لتنظيم المناسبات
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-ajn-muted print:mt-2 print:max-w-[110mm] print:text-xs print:leading-5 print:text-neutral-600">
-                  فاتورة طلب رسمية قابلة للطباعة والحفظ بصيغة PDF من لوحة الإدارة مباشرة.
                 </p>
               </div>
 
@@ -94,7 +93,7 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
                   <h2 className="text-2xl font-bold text-white print:text-xl print:text-black">ملخص المبالغ</h2>
                 </div>
                 <span className="rounded-full border border-ajn-line px-3 py-1 text-xs text-ajn-muted print:border-neutral-300 print:px-2 print:py-1 print:text-[10px] print:text-neutral-600">
-                  A4 Ready
+                  alijan
                 </span>
               </div>
 
@@ -113,7 +112,6 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
             </section>
 
             <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-ajn-line pt-6 text-sm text-ajn-muted print:gap-2 print:border-neutral-300 print:pt-4 print:text-[11px] print:text-neutral-600">
-              <p>تم إنشاء هذه الفاتورة من نظام إدارة الحجوزات وتتبع الطلبات الخاص بمجموعة علي جان نهاد.</p>
               <p>رقم الطلب: {order.order_code}</p>
             </footer>
           </div>
