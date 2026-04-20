@@ -20,30 +20,14 @@ create table if not exists public.orders (
   ),
   notes text default ''::text,
   images text[] not null default '{}'::text[],
-  portal_message text not null default ''::text,
-  delivery_details text not null default ''::text,
-  estimated_delivery_date date,
-  archived_at timestamptz,
-  last_notification_at timestamptz,
-  last_notification_status text,
-  status_history jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
-
-alter table public.orders add column if not exists portal_message text not null default ''::text;
-alter table public.orders add column if not exists delivery_details text not null default ''::text;
-alter table public.orders add column if not exists estimated_delivery_date date;
-alter table public.orders add column if not exists archived_at timestamptz;
-alter table public.orders add column if not exists last_notification_at timestamptz;
-alter table public.orders add column if not exists last_notification_status text;
-alter table public.orders add column if not exists status_history jsonb not null default '[]'::jsonb;
 
 create index if not exists orders_updated_at_idx on public.orders (updated_at desc);
 create index if not exists orders_order_code_idx on public.orders (order_code);
 create index if not exists orders_phone_idx on public.orders (phone);
 create index if not exists orders_status_idx on public.orders (status);
-create index if not exists orders_archived_at_idx on public.orders (archived_at);
 
 create or replace function public.set_updated_at()
 returns trigger

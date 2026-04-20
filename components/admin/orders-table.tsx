@@ -1,19 +1,19 @@
-import { Archive, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { MessageCircleMore, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SERVICE_TYPE_LABELS } from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
-import { formatDateOnly, formatDateTime, isArchivedOrder } from "@/lib/utils";
+import { formatDateOnly, formatDateTime } from "@/lib/utils";
 
 interface OrdersTableProps {
   orders: OrderRecord[];
   onEdit: (order: OrderRecord) => void;
   onDelete: (order: OrderRecord) => void;
-  onToggleArchive: (order: OrderRecord) => void;
+  onWhatsApp: (order: OrderRecord) => void;
 }
 
-export function OrdersTable({ orders, onEdit, onDelete, onToggleArchive }: OrdersTableProps) {
+export function OrdersTable({ orders, onEdit, onDelete, onWhatsApp }: OrdersTableProps) {
   if (!orders.length) {
     return (
       <div className="surface-panel p-10 text-center text-sm leading-8 text-ajn-muted">
@@ -42,14 +42,7 @@ export function OrdersTable({ orders, onEdit, onDelete, onToggleArchive }: Order
               <tr key={order.id} className="transition hover:bg-white/[0.03]">
                 <td className="px-5 py-4">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-white">{order.name}</p>
-                      {isArchivedOrder(order) ? (
-                        <span className="rounded-full border border-ajn-line px-2 py-1 text-[11px] text-ajn-goldSoft">
-                          مؤرشف
-                        </span>
-                      ) : null}
-                    </div>
+                    <p className="font-semibold text-white">{order.name}</p>
                     <p className="text-sm text-ajn-muted">{order.phone}</p>
                   </div>
                 </td>
@@ -64,15 +57,15 @@ export function OrdersTable({ orders, onEdit, onDelete, onToggleArchive }: Order
                 <td className="px-5 py-4 text-sm text-ajn-muted">{formatDateTime(order.updated_at)}</td>
                 <td className="px-5 py-4">
                   <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      className="border-[#25D366]/35 bg-[#25D366]/10 px-3 py-2 text-[#b6f4cf] hover:bg-[#25D366]/16"
+                      onClick={() => onWhatsApp(order)}
+                    >
+                      <MessageCircleMore className="h-4 w-4" />
+                    </Button>
                     <Button variant="secondary" className="px-3 py-2" onClick={() => onEdit(order)}>
                       <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="secondary" className="px-3 py-2" onClick={() => onToggleArchive(order)}>
-                      {isArchivedOrder(order) ? (
-                        <RotateCcw className="h-4 w-4" />
-                      ) : (
-                        <Archive className="h-4 w-4" />
-                      )}
                     </Button>
                     <Button variant="danger" className="px-3 py-2" onClick={() => onDelete(order)}>
                       <Trash2 className="h-4 w-4" />
@@ -90,14 +83,7 @@ export function OrdersTable({ orders, onEdit, onDelete, onToggleArchive }: Order
           <div key={order.id} className="surface-panel p-5">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-bold text-white">{order.name}</h3>
-                  {isArchivedOrder(order) ? (
-                    <span className="rounded-full border border-ajn-line px-2 py-1 text-[11px] text-ajn-goldSoft">
-                      مؤرشف
-                    </span>
-                  ) : null}
-                </div>
+                <h3 className="text-lg font-bold text-white">{order.name}</h3>
                 <p className="text-sm text-ajn-muted">{order.order_code}</p>
               </div>
               <StatusBadge status={order.status} />
@@ -109,13 +95,17 @@ export function OrdersTable({ orders, onEdit, onDelete, onToggleArchive }: Order
               <p>آخر تحديث: {formatDateTime(order.updated_at)}</p>
             </div>
             <div className="mt-4 flex gap-2">
+              <Button
+                variant="secondary"
+                className="flex-1 border-[#25D366]/35 bg-[#25D366]/10 text-[#b6f4cf] hover:bg-[#25D366]/16"
+                onClick={() => onWhatsApp(order)}
+              >
+                <MessageCircleMore className="h-4 w-4" />
+                واتساب
+              </Button>
               <Button variant="secondary" className="flex-1" onClick={() => onEdit(order)}>
                 <Pencil className="h-4 w-4" />
                 تعديل
-              </Button>
-              <Button variant="secondary" className="flex-1" onClick={() => onToggleArchive(order)}>
-                {isArchivedOrder(order) ? <RotateCcw className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-                {isArchivedOrder(order) ? "استرجاع" : "أرشفة"}
               </Button>
               <Button variant="danger" className="flex-1" onClick={() => onDelete(order)}>
                 <Trash2 className="h-4 w-4" />

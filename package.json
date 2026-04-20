@@ -2,13 +2,22 @@
   "name": "ajn-booking-tracking",
   "version": "0.1.0",
   "private": true,
+  "description": "AJN booking, tracking, and admin desktop-ready app.",
+  "author": "AJN",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "hash:admin": "node scripts/generate-admin-hash.mjs"
+    "hash:admin": "node scripts/generate-admin-hash.mjs",
+    "desktop:dev": "node scripts/electron-dev.mjs",
+    "desktop:config": "node scripts/build-desktop-config.mjs",
+    "desktop:package": "npm run desktop:config && electron-forge package",
+    "desktop:make": "npm run lint && npm run build && npm run desktop:config && electron-forge make",
+    "desktop:make:win": "npm run lint && npm run build && npm run desktop:config && electron-forge make --platform=win32 --arch=x64",
+    "deploy:web": "npm run build && npx vercel --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -26,10 +35,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.20",
+    "electron": "^37.3.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
     "postcss": "^8.4.49",

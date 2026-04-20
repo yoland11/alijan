@@ -11,7 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ORDER_STATUSES, SERVICE_TYPE_LABELS, SERVICE_TYPES } from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
-import { buildOrderCode } from "@/lib/utils";
+import { buildOrderCode, buildOrderImageProxyUrl } from "@/lib/utils";
 import { orderSchema } from "@/lib/validators";
 import type { z } from "zod";
 
@@ -33,9 +33,6 @@ const defaultValues: OrderFormInput = {
   booking_date: new Date().toISOString().split("T")[0],
   status: "تم الحجز",
   notes: "",
-  portal_message: "",
-  delivery_details: "",
-  estimated_delivery_date: "",
   images: [],
 };
 
@@ -70,9 +67,6 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             booking_date: order.booking_date,
             status: order.status,
             notes: order.notes,
-            portal_message: order.portal_message,
-            delivery_details: order.delivery_details,
-            estimated_delivery_date: order.estimated_delivery_date ?? "",
             images: order.images,
           }
         : defaultValues,
@@ -170,37 +164,6 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
               <Textarea {...register("notes")} placeholder="ملاحظات داخلية أو تفاصيل إضافية للعميل..." />
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm text-ajn-goldSoft">رسالة بوابة العميل</label>
-                <Textarea
-                  {...register("portal_message")}
-                  placeholder="رسالة ظاهرة للعميل داخل صفحة التتبع، مثل آخر مستجدات الطلب أو التعليمات الحالية."
-                />
-              </div>
-
-              <div className="space-y-5">
-                <div>
-                  <label className="mb-2 block text-sm text-ajn-goldSoft">تعليمات التسليم أو الاستلام</label>
-                  <Textarea
-                    {...register("delivery_details")}
-                    placeholder="مثال: التسليم من الفرع الرئيسي بعد التواصل، أو إرسال النسخة الرقمية أولًا."
-                    className="min-h-[120px]"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm text-ajn-goldSoft">موعد التسليم المتوقع</label>
-                  <Input type="date" {...register("estimated_delivery_date")} />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-ajn-line bg-ajn-gold/8 p-4 text-sm leading-7 text-ajn-ivory">
-              سيتم إرسال إشعار واتساب تلقائيًا للعميل عند إنشاء الطلب أو عند تغيير حالته إذا كان تكامل واتساب
-              مفعّلًا في إعدادات البيئة.
-            </div>
-
             <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="rounded-3xl border border-dashed border-ajn-line bg-white/[0.03] p-5">
                 <div className="mb-4 flex items-center gap-3">
@@ -254,7 +217,11 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                     {images.map((imageUrl) => (
                       <div key={imageUrl} className="overflow-hidden rounded-2xl border border-ajn-line">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={imageUrl} alt="order media" className="h-28 w-full object-cover" />
+                        <img
+                          src={buildOrderImageProxyUrl(imageUrl)}
+                          alt="order media"
+                          className="h-28 w-full object-cover"
+                        />
                         <button
                           type="button"
                           className="w-full border-t border-ajn-line bg-black/40 px-3 py-2 text-xs text-red-200 transition hover:bg-red-500/12"
@@ -278,10 +245,10 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                 إلغاء
               </Button>
               <Button type="submit" disabled={busy}>
-              {busy ? "جاري الحفظ..." : order ? "حفظ التعديلات" : "إنشاء الطلب"}
-            </Button>
-          </div>
-        </form>
+                {busy ? "جاري الحفظ..." : order ? "حفظ التعديلات" : "إنشاء الطلب"}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

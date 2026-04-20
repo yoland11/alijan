@@ -23,22 +23,11 @@ export const orderSchema = z.object({
     error: "يرجى اختيار الحالة.",
   }),
   notes: z.string().max(1500, "الملاحظات طويلة جدًا.").optional().default(""),
-  portal_message: z.string().max(1500, "رسالة العميل طويلة جدًا.").optional().default(""),
-  delivery_details: z.string().max(1500, "تفاصيل التسليم طويلة جدًا.").optional().default(""),
-  estimated_delivery_date: z
-    .string()
-    .optional()
-    .nullable()
-    .transform((value) => (value && value.trim() ? value : null)),
   images: z.array(z.string().url()).optional().default([]),
 });
 
 export const trackingQuerySchema = z.object({
   query: z.string().min(4, "أدخل كود الطلب أو آخر 4 أرقام من الهاتف."),
-});
-
-export const archiveActionSchema = z.object({
-  action: z.enum(["archive", "restore"]),
 });
 
 export type OrderSchema = z.infer<typeof orderSchema>;

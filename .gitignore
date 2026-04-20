@@ -6,8 +6,9 @@ dist
 .env
 .env.local
 .env.production
+electron/runtime-config.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
+.vercel

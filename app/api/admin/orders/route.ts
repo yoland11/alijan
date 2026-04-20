@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { getAdminSession } from "@/lib/auth";
-import { markOrderNotificationSent, createOrder, listOrders } from "@/lib/server/orders";
+import { createOrder, listOrders } from "@/lib/server/orders";
 import { broadcastOrderUpdate } from "@/lib/supabase/realtime";
-import { isWhatsAppAutomationConfigured, sendOrderCreatedNotification } from "@/lib/whatsapp";
 import { orderSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +16,7 @@ export async function GET() {
 
   try {
     const orders = await listOrders();
-    return NextResponse.json({
-      orders,
-      meta: {
-        whatsappAutomationEnabled: isWhatsAppAutomationConfigured(),
-      },
-    });
+    return NextResponse.json({ orders });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر تحميل الطلبات." },
@@ -49,15 +43,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const createdOrder = await createOrder(parsed.data);
-    const notification = await sendOrderCreatedNotification(createdOrder);
-    const order =
-      notification.sent
-        ? await markOrderNotificationSent(createdOrder.id, createdOrder.status)
-        : createdOrder;
+    const order = await createOrder(parsed.data);
     await broadcastOrderUpdate(order);
 
-    return NextResponse.json({ order, notification, message: "تم إنشاء الطلب." }, { status: 201 });
+    return NextResponse.json({ order, message: "تم إنشاء الطلب." }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر إنشاء الطلب." },

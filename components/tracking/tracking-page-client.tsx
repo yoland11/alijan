@@ -16,7 +16,8 @@ import { formatDateOnly, maskPhone, normalizeTrackingQuery } from "@/lib/utils";
 export function TrackingPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
+  const urlQuery =
+    searchParams.get("code") ?? searchParams.get("q") ?? searchParams.get("query") ?? "";
   const [query, setQuery] = useState(urlQuery);
   const [results, setResults] = useState<OrderRecord[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
@@ -137,6 +138,11 @@ export function TrackingPageClient() {
       return;
     }
 
+    if (normalized.startsWith("AJN-")) {
+      router.push(`/track?code=${encodeURIComponent(normalized)}`);
+      return;
+    }
+
     router.push(`/track?q=${encodeURIComponent(query)}`);
   };
 
@@ -193,9 +199,7 @@ export function TrackingPageClient() {
           </section>
         ) : null}
 
-        {selectedOrder ? (
-          <OrderTrackingView order={selectedOrder} onRefresh={() => void runSearch(selectedOrder.order_code)} />
-        ) : null}
+        {selectedOrder ? <OrderTrackingView order={selectedOrder} /> : null}
 
         {emptyState ? (
           <section className="surface-panel p-10 text-center">

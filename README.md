@@ -1,91 +1,149 @@
 # AJN Booking & Order Tracking System
 
-منصة عربية RTL جاهزة للإنتاج لإدارة حجوزات وطلبات `AJN` مع صفحة تتبع للعميل ولوحة إدارة محمية.
+تطبيق `Next.js` عربي RTL جاهز للإنتاج مع:
 
-## التقنيات
+- لوحة إدارة موجودة حاليًا على الويب ويمكن تشغيلها أيضًا كتطبيق Windows عبر Electron
+- صفحة تتبع عملاء عامة على الويب
+- قاعدة بيانات ووسائط عبر Supabase
+
+## ما الذي تغيّر
+
+- تم الحفاظ على الكود الحالي والـ Supabase والـ APIs والـ RTL UI بدون إعادة بناء المشروع.
+- تمت إضافة غلاف `Electron` للوحة الإدارة الحالية بدل إعادة كتابة الواجهة.
+- تمت إضافة دعم روابط مباشرة مثل:
+
+```text
+/track?code=AJN-1234
+```
+
+## تقنيات المشروع
 
 - Next.js 16 + React 19
-- Route Handlers API
-- Supabase (Database + Storage + Realtime Broadcast)
+- Supabase
 - Tailwind CSS
 - GSAP
-- Zod + React Hook Form + Sonner
+- Electron Forge لصناعة نسخة Windows `.exe`
 
-## التشغيل السريع
+## متغيرات البيئة
 
-1. انسخ ملف البيئة:
+انسخ:
 
 ```bash
 cp .env.example .env.local
 ```
 
-2. أنشئ كلمة مرور مشفرة للإدارة:
-
-```bash
-node scripts/generate-admin-hash.mjs your-password
-```
-
-3. أضف القيم داخل `.env.local`.
-
-4. شغّل SQL الموجود في [supabase/schema.sql](/Users/yoland/Desktop/علي جان /supabase/schema.sql).
-
-5. ثبّت الحزم ثم شغّل التطوير:
-
-```bash
-npm install
-npm run dev
-```
-
-## متغيرات البيئة
+وأضف:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_APP_URL`
-- `APP_BASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_STORAGE_BUCKET`
 - `AUTH_SECRET`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD_HASH` أو `ADMIN_PASSWORD`
 - `NEXT_PUBLIC_WHATSAPP_NUMBER`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_API_VERSION`
+- `NEXT_PUBLIC_APP_URL`
+- `APP_BASE_URL`
 
-## الميزات المضافة
+`APP_BASE_URL` و`NEXT_PUBLIC_APP_URL` يجب أن يشيرا إلى الرابط العام المنشور للموقع مثل:
 
-- إشعارات واتساب تلقائية عند إنشاء الطلب أو تغيير حالته عبر Meta WhatsApp Cloud API.
-- أرشفة واسترجاع للطلبات من لوحة الإدارة دون حذفها.
-- تصدير CSV للطلبات بحسب الفلاتر الحالية.
-- بوابة عميل أوسع تعرض:
-  - رسالة مخصصة من AJN
-  - تعليمات التسليم أو الاستلام
-  - موعد التسليم المتوقع
-  - سجل زمني كامل للحالات مع التواريخ
-  - روابط نسخ كود الطلب ورابط البوابة
+```env
+APP_BASE_URL=https://your-live-site.example.com
+NEXT_PUBLIC_APP_URL=https://your-live-site.example.com
+```
 
-## تفعيل واتساب التلقائي
+## التطوير المحلي
 
-إذا أردت تشغيل الإشعارات التلقائية فعليًا، أضف:
+```bash
+npm install
+npm run dev
+```
 
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_ACCESS_TOKEN`
-- `APP_BASE_URL` أو `NEXT_PUBLIC_APP_URL`
+الموقع العام محليًا:
 
-إذا لم تضفها، سيبقى النظام يعمل بشكل طبيعي لكن بدون إرسال واتساب تلقائي.
+- `http://localhost:3000/track`
+- `http://localhost:3000/track?code=AJN-1234`
 
-## المسارات الأساسية
+## تشغيل لوحة الإدارة كتطبيق Electron أثناء التطوير
 
-- `/` الصفحة الرئيسية الفاخرة
-- `/track` صفحة تتبع الطلب
-- `/admin/login` دخول الإدارة
-- `/admin` لوحة الإدارة
+```bash
+npm run desktop:dev
+```
 
-## ملاحظات الإنتاج
+هذا يشغّل Next محليًا ثم يفتح نافذة Electron على:
 
-- CRUD يتم عبر API محمية بكوكي JWT.
-- رفع الصور يتم عبر Supabase Storage باستخدام `service role`.
-- التحديثات اللحظية تعتمد Supabase Realtime Broadcast مع fallback تلقائي عبر إعادة الجلب بعد العمليات.
-- التصدير الحالي بصيغة `CSV` ويدعم النص العربي مع BOM لفتح مباشر في Excel.
-- الأرشفة تحفظ الطلب داخل النظام وتخرجه من العرض النشط بدل حذفه.
-- النظام يعمل بالكامل `RTL` مع رسائل وتجربة عربية.
+- `/admin/login`
+
+## بناء نسخة Windows `.exe`
+
+1. تأكد أن الموقع منشور فعلًا على رابط عام.
+2. تأكد أن `APP_BASE_URL` أو `ELECTRON_ADMIN_URL` مضبوط.
+3. إذا كنت تبني على جهاز Windows نفّذ:
+
+```bash
+npm run desktop:make:win
+```
+
+الملفات الناتجة ستظهر داخل مجلد `out/` عبر Electron Forge، وتتضمن مثبت Windows بصيغة `.exe`.
+
+إذا كنت تعمل من macOS أو Linux، استخدم GitHub Actions workflow الجاهز في:
+
+[.github/workflows/production-release.yml](/Users/yoland/Desktop/علي%20جان%20/.github/workflows/production-release.yml)
+
+هذا الـ workflow يقوم بأمرين:
+
+- نشر الموقع العام على Vercel
+- بناء نسخة Windows `.exe` على `windows-latest` ورفعها كـ artifact
+
+## نشر الموقع العام
+
+الافتراض الافتراضي هنا هو Vercel لأن المشروع Next.js ويحتوي API routes.
+
+بعد تسجيل الدخول إلى Vercel:
+
+```bash
+npm run deploy:web
+```
+
+أو:
+
+```bash
+npx vercel --prod
+```
+
+أو استخدم GitHub Actions بعد إضافة هذه الأسرار إلى المستودع:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET`
+- `AUTH_SECRET`
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD_HASH`
+- `ADMIN_PASSWORD` إذا كنت لا تستخدم الـ hash في بيئة البناء
+- `NEXT_PUBLIC_WHATSAPP_NUMBER`
+- `NEXT_PUBLIC_APP_URL`
+- `APP_BASE_URL`
+- `ELECTRON_ADMIN_URL` اختياري إذا أردت أن تشير نسخة Electron إلى مسار مختلف عن `/admin/login`
+
+## Supabase
+
+شغّل SQL الموجود في:
+
+[supabase/schema.sql](/Users/yoland/Desktop/علي%20جان%20/supabase/schema.sql)
+
+## التحقق
+
+```bash
+npm run lint
+npm run build
+```
+
+## ملاحظات إنتاجية
+
+- تطبيق Electron يفتح لوحة الإدارة المنشورة من نفس الكود الحالي، لذلك تبقى مفاتيح الخادم الحساسة على السيرفر وليس داخل `.exe`.
+- صفحة التتبع العامة تدعم الآن `?code=` و`?q=` و`?query=` معًا.
+- كل منطق الطلبات الحالي والـ APIs الحالية بقي كما هو.

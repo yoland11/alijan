@@ -1,20 +1,11 @@
 import { CheckCircle2, Circle } from "lucide-react";
 
 import { ORDER_STATUSES, STATUS_DESCRIPTIONS } from "@/lib/constants";
-import type { OrderStatusHistoryEntry } from "@/lib/types";
 import { cn, getStatusIndex } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
-import { formatDateTime } from "@/lib/utils";
 
-export function StatusTimeline({
-  status,
-  history = [],
-}: {
-  status: OrderStatus;
-  history?: OrderStatusHistoryEntry[];
-}) {
+export function StatusTimeline({ status }: { status: OrderStatus }) {
   const currentIndex = getStatusIndex(status);
-  const historyMap = new Map(history.map((item) => [item.status, item]));
 
   return (
     <div className="surface-panel p-6 sm:p-7">
@@ -27,7 +18,6 @@ export function StatusTimeline({
         {ORDER_STATUSES.map((item, index) => {
           const completed = index < currentIndex;
           const active = index === currentIndex;
-          const historyEntry = historyMap.get(item);
 
           return (
             <div key={item} className="relative flex gap-4">
@@ -61,9 +51,6 @@ export function StatusTimeline({
                 <p className="max-w-2xl text-sm leading-7 text-ajn-muted">
                   {STATUS_DESCRIPTIONS[item]}
                 </p>
-                {historyEntry ? (
-                  <p className="text-xs text-ajn-goldSoft">{formatDateTime(historyEntry.timestamp)}</p>
-                ) : null}
               </div>
             </div>
           );
