@@ -127,7 +127,7 @@ export function buildWhatsAppUrl(order: OrderRecord) {
   }
 
   const message = encodeURIComponent(
-    `مرحبًا،علي أود الاستفسار عن حالة طلبي ${order.order_code} باسم ${order.name}.`,
+    `مرحبًا، أود الاستفسار عن حالة طلبي ${order.order_code} باسم ${order.name}.`,
   );
 
   return `https://wa.me/${number}?text=${message}`;
@@ -141,11 +141,15 @@ export function buildCustomerOrderWhatsAppUrl(order: OrderRecord) {
   }
 
   const trackingLink = buildOrderTrackingLink(order.order_code);
+
   const message = encodeURIComponent(
-    ` عزيزنا العميل، تم تسجيل طلبك بنجاح.
+    `عزيزنا العميل، تم تسجيل طلبك بنجاح.
 يمكنك الآن متابعة حالة الطلب عبر الرابط التالي:
-\n${trackingLink}\n\nشكراً لاختيارك مجموعة علي جان نهاد لتنظيم المناسبات
- نسعد بخدمتكم دائماً.  `
+
+${trackingLink}
+
+شكراً لاختيارك مجموعة علي جان نهاد لتنظيم المناسبات،
+نسعد بخدمتكم دائماً.`
   );
 
   return `https://wa.me/${number}?text=${message}`;
