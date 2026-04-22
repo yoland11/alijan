@@ -129,7 +129,9 @@ function InvoiceCopy({
 
         <div className="min-w-[92px] rounded-[16px] border border-black/10 bg-[#faf7eb] px-3 py-2 text-right print:min-w-[28mm] print:rounded-[8px] print:px-[2mm] print:py-[1.2mm]">
           <p className="text-[10px] text-[#8a6a10] print:text-[6.8px]">رقم الفاتورة</p>
-          <p className="mt-1 text-sm font-bold text-black print:mt-[0.8mm] print:text-[10px]">{orderCode}</p>
+          <p className="mt-1 text-sm font-bold text-black print:mt-[0.8mm] print:text-[10px]">
+            {orderCode}
+          </p>
           <p className="mt-1 text-[10px] text-black/60 print:text-[6.6px]">الإصدار: {invoiceIssuedAt}</p>
         </div>
       </div>
@@ -151,7 +153,9 @@ function InvoiceCopy({
         </div>
 
         <div className="rounded-[16px] border border-black/10 bg-[#fcfcfc] px-3 py-2 print:rounded-[8px] print:px-[2mm] print:py-[1.4mm]">
-          <p className="mb-1 text-[10px] font-semibold text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">الملاحظات</p>
+          <p className="mb-1 text-[10px] font-semibold text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">
+            الملاحظات
+          </p>
           <p className="whitespace-pre-wrap text-[11px] leading-6 text-black/75 print:text-[7px] print:leading-[1.45]">
             {notes || "لا توجد ملاحظات مضافة على هذا الطلب."}
           </p>
@@ -186,8 +190,10 @@ function InvoiceAmountCell({
   return (
     <div
       className={[
-        "rounded-[16px] border px-3 py-2 print:rounded-[8px] print:px-[2mm] print:py-[1.2mm]",
-        accent ? "border-[#d4af37]/35 bg-[#faf7eb]" : "border-black/10 bg-[#fcfcfc]",
+        "rounded-[16px] border p-5 print:rounded-[16px] print:bg-white print:p-3",
+        accent
+          ? "border-[#d4af37]/35 bg-[#faf7eb] print:border-[#c8a132]"
+          : "border-black/10 bg-[#fcfcfc]",
       ].join(" ")}
     >
       <p className="mb-1 text-[10px] text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">{label}</p>
