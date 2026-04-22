@@ -50,9 +50,12 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
       `}</style>
 
       <div className="invoice-sheet mx-auto w-full max-w-[198mm] print:max-w-[196mm]">
-        <InvoicePrintActions orderId={order.id} autoPrint={autoPrint} />
+        <InvoicePrintActions orderId={order.id} orderCode={order.order_code} autoPrint={autoPrint} />
 
-        <article className="overflow-hidden rounded-[34px] border border-ajn-line bg-[#060606] shadow-[0_32px_100px_rgba(0,0,0,0.35)] print:rounded-none print:border-none print:bg-white print:shadow-none">
+        <article
+          id="invoice-document"
+          className="overflow-hidden rounded-[34px] border border-ajn-line bg-[#060606] shadow-[0_32px_100px_rgba(0,0,0,0.35)] print:rounded-none print:border-none print:bg-white print:shadow-none"
+        >
           <header className="border-b border-ajn-line bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.18),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] px-8 py-8 print:px-5 print:py-4 print:bg-none">
             <div className="flex flex-wrap items-start justify-between gap-6 print:gap-4">
               <div>
