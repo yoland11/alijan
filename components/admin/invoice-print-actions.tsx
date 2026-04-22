@@ -45,37 +45,49 @@ export function InvoicePrintActions({
       ]);
 
       const canvas = await html2canvas(invoiceNode, {
-        backgroundColor: "#060606",
+        backgroundColor: "#ffffff",
         scale: 2,
         useCORS: true,
         logging: false,
       });
 
       const imageData = canvas.toDataURL("image/png", 1);
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
-      const renderWidth = canvas.width * scale;
-      const renderHeight = canvas.height * scale;
-      const xOffset = (pageWidth - renderWidth) / 2;
-      const yOffset = (pageHeight - renderHeight) / 2;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 4;
+
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      const ratio = Math.min(usableWidth / imgWidth, usableHeight / imgHeight);
+
+      const renderWidth = imgWidth * ratio;
+      const renderHeight = imgHeight * ratio;
+
+      const x = (pageWidth - renderWidth) / 2;
+      const y = (pageHeight - renderHeight) / 2;
 
       pdf.addImage(
         imageData,
         "PNG",
-        Math.max(xOffset, 0),
-        Math.max(yOffset, 0),
+        x,
+        y,
         renderWidth,
         renderHeight,
         undefined,
         "FAST",
       );
+
       pdf.save(`invoice-${orderCode}.pdf`);
     } catch (error) {
       console.error("PDF download failed", error);

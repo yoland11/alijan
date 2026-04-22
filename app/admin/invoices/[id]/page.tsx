@@ -31,92 +31,51 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
   }
 
   return (
-    <div className="min-h-screen bg-[#040404] px-4 py-8 text-white print:min-h-0 print:bg-white print:px-0 print:py-0 print:text-black">
+    <div className="min-h-screen bg-[#0a0a0a] px-4 py-8 text-black print:min-h-0 print:bg-white print:px-0 print:py-0">
       <style>{`
         @page {
-          size: A4;
-          margin: 7mm;
+          size: A4 portrait;
+          margin: 6mm;
         }
 
         @media print {
           html, body {
             width: 210mm;
-            height: 297mm;
+            min-height: 297mm;
             overflow: hidden;
+            background: #ffffff;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
         }
       `}</style>
 
-      <div className="invoice-sheet mx-auto w-full max-w-[198mm] print:max-w-[196mm]">
+      <div className="mx-auto w-full max-w-[190mm]">
         <InvoicePrintActions orderId={order.id} orderCode={order.order_code} autoPrint={autoPrint} />
 
         <article
           id="invoice-document"
-          className="overflow-hidden rounded-[34px] border border-ajn-line bg-[#060606] shadow-[0_32px_100px_rgba(0,0,0,0.35)] print:rounded-none print:border-none print:bg-white print:shadow-none"
+          className="overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:max-w-none print:rounded-none print:border-none print:shadow-none"
         >
-          <header className="border-b border-ajn-line bg-[radial-gradient(circle_at_top,_rgba(212,175,55,0.18),_transparent_55%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] px-8 py-8 print:px-5 print:py-4 print:bg-none">
-            <div className="flex flex-wrap items-start justify-between gap-6 print:gap-4">
-              <div>
-                <p className="mb-3 text-sm font-semibold tracking-[0.22em] text-ajn-goldSoft print:mb-2 print:text-[10px] print:text-[#8a6a10]">
-                  AJN EVENTS GROUP
-                </p>
-                <h1 className="text-3xl font-bold text-white print:text-2xl print:text-black">
-                  مجموعة علي جان نهاد لتنظيم المناسبات
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-ajn-muted print:mt-2 print:max-w-[110mm] print:text-xs print:leading-5 print:text-neutral-600">
-                </p>
-              </div>
-
-              <div className="rounded-[28px] border border-ajn-line bg-black/20 px-5 py-4 text-right print:rounded-[18px] print:border-neutral-300 print:bg-neutral-50 print:px-4 print:py-3">
-                <p className="mb-2 text-sm text-ajn-goldSoft print:mb-1 print:text-[10px] print:text-[#8a6a10]">الفاتورة</p>
-                <p className="text-xl font-bold text-white print:text-lg print:text-black">{order.order_code}</p>
-                <p className="mt-2 text-sm text-ajn-muted print:mt-1 print:text-[11px] print:text-neutral-600">
-                  تاريخ الإصدار: {formatDateTime(invoiceIssuedAt)}
-                </p>
-              </div>
-            </div>
-          </header>
-
-          <div className="space-y-8 px-8 py-8 print:space-y-4 print:px-5 print:py-4">
-            <section className="grid gap-4 md:grid-cols-2 print:grid-cols-3 print:gap-2">
-              <InvoiceInfoCard label="اسم الزبون" value={order.name} />
-              <InvoiceInfoCard label="رقم الهاتف" value={order.phone} />
-              <InvoiceInfoCard label="نوع الخدمة" value={SERVICE_TYPE_LABELS[order.service_type]} />
-              <InvoiceInfoCard label="تاريخ الحجز" value={formatDateOnly(order.booking_date)} />
-              <InvoiceInfoCard label="الحالة الحالية" value={order.status} />
-              <InvoiceInfoCard label="آخر تحديث" value={formatDateTime(order.updated_at)} />
-            </section>
-
-            <section className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-6 print:rounded-[20px] print:border-neutral-300 print:bg-neutral-50 print:p-4">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 print:mb-3">
-                <div>
-                  <p className="mb-2 text-sm text-ajn-goldSoft print:mb-1 print:text-[10px] print:text-[#8a6a10]">البيانات المالية</p>
-                  <h2 className="text-2xl font-bold text-white print:text-xl print:text-black">ملخص المبالغ</h2>
-                </div>
-                <span className="rounded-full border border-ajn-line px-3 py-1 text-xs text-ajn-muted print:border-neutral-300 print:px-2 print:py-1 print:text-[10px] print:text-neutral-600">
-                  alijan
-                </span>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3 print:gap-2">
-                <InvoiceAmountCard label="المبلغ الكلي" value={formatAmountWithCurrency(order.total_amount)} />
-                <InvoiceAmountCard label="المبلغ الواصل" value={formatAmountWithCurrency(order.received_amount)} />
-                <InvoiceAmountCard label="المبلغ المتبقي" value={formatAmountWithCurrency(order.remaining_amount)} accent />
-              </div>
-            </section>
-
-            <section className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-6 print:rounded-[20px] print:border-neutral-300 print:bg-neutral-50 print:p-4">
-              <p className="mb-3 text-sm text-ajn-goldSoft print:mb-2 print:text-[10px] print:text-[#8a6a10]">الملاحظات</p>
-              <p className="whitespace-pre-wrap leading-8 text-ajn-ivory print:text-sm print:leading-6 print:text-neutral-800">
-                {order.notes || "لا توجد ملاحظات مضافة على هذا الطلب."}
-              </p>
-            </section>
-
-            <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-ajn-line pt-6 text-sm text-ajn-muted print:gap-2 print:border-neutral-300 print:pt-4 print:text-[11px] print:text-neutral-600">
-              <p>رقم الطلب: {order.order_code}</p>
-            </footer>
+          <div className="flex flex-col gap-4 p-4 print:gap-[3.5mm] print:p-0">
+            {[1, 2, 3].map((copyIndex) => (
+              <InvoiceCopy
+                key={copyIndex}
+                orderCode={order.order_code}
+                customerName={order.name}
+                phone={order.phone}
+                serviceType={SERVICE_TYPE_LABELS[order.service_type]}
+                bookingDate={formatDateOnly(order.booking_date)}
+                status={order.status}
+                updatedAt={formatDateTime(order.updated_at)}
+                totalAmount={formatAmountWithCurrency(order.total_amount)}
+                receivedAmount={formatAmountWithCurrency(order.received_amount)}
+                remainingAmount={formatAmountWithCurrency(order.remaining_amount)}
+                notes={order.notes}
+                invoiceIssuedAt={formatDateTime(invoiceIssuedAt)}
+                showDivider={copyIndex < 3}
+              />
+            ))}
           </div>
         </article>
       </div>
@@ -124,16 +83,98 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
   );
 }
 
-function InvoiceInfoCard({ label, value }: { label: string; value: string }) {
+function InvoiceCopy({
+  orderCode,
+  customerName,
+  phone,
+  serviceType,
+  bookingDate,
+  status,
+  updatedAt,
+  totalAmount,
+  receivedAmount,
+  remainingAmount,
+  notes,
+  invoiceIssuedAt,
+  showDivider,
+}: {
+  orderCode: string;
+  customerName: string;
+  phone: string;
+  serviceType: string;
+  bookingDate: string;
+  status: string;
+  updatedAt: string;
+  totalAmount: string;
+  receivedAmount: string;
+  remainingAmount: string;
+  notes: string;
+  invoiceIssuedAt: string;
+  showDivider: boolean;
+}) {
   return (
-    <div className="rounded-[26px] border border-ajn-line bg-white/[0.03] p-5 print:rounded-[16px] print:border-neutral-300 print:bg-white print:p-3">
-      <p className="mb-2 text-sm text-ajn-goldSoft print:mb-1 print:text-[10px] print:text-[#8a6a10]">{label}</p>
-      <p className="text-base font-semibold text-white print:text-sm print:text-black">{value}</p>
+    <section className="rounded-[22px] border border-black/10 bg-white p-4 print:rounded-[12px] print:border-black/15 print:p-[3.2mm]">
+      <div className="mb-3 flex items-start justify-between gap-4 border-b border-black/10 pb-3 print:mb-[2.4mm] print:gap-[2mm] print:pb-[2mm]">
+        <div>
+          <p className="mb-1 text-[11px] font-semibold tracking-[0.22em] text-[#8a6a10] print:text-[7.5px]">
+            AJN EVENTS GROUP
+          </p>
+          <h1 className="text-lg font-bold text-black print:text-[12px]">
+            مجموعة علي جان نهاد لتنظيم المناسبات
+          </h1>
+          <p className="mt-1 text-[11px] text-black/60 print:mt-[1mm] print:text-[7px]">
+            فاتورة طلب جاهزة للطباعة والحفظ
+          </p>
+        </div>
+
+        <div className="min-w-[92px] rounded-[16px] border border-black/10 bg-[#faf7eb] px-3 py-2 text-right print:min-w-[28mm] print:rounded-[8px] print:px-[2mm] print:py-[1.2mm]">
+          <p className="text-[10px] text-[#8a6a10] print:text-[6.8px]">رقم الفاتورة</p>
+          <p className="mt-1 text-sm font-bold text-black print:mt-[0.8mm] print:text-[10px]">{orderCode}</p>
+          <p className="mt-1 text-[10px] text-black/60 print:text-[6.6px]">الإصدار: {invoiceIssuedAt}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-2 print:gap-[1.6mm]">
+        <div className="grid gap-2 sm:grid-cols-3 print:grid-cols-3 print:gap-[1.6mm]">
+          <InvoiceCell label="اسم الزبون" value={customerName} />
+          <InvoiceCell label="رقم الهاتف" value={phone} />
+          <InvoiceCell label="نوع الخدمة" value={serviceType} />
+          <InvoiceCell label="تاريخ الحجز" value={bookingDate} />
+          <InvoiceCell label="الحالة الحالية" value={status} />
+          <InvoiceCell label="آخر تحديث" value={updatedAt} />
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3 print:grid-cols-3 print:gap-[1.6mm]">
+          <InvoiceAmountCell label="المبلغ الكلي" value={totalAmount} />
+          <InvoiceAmountCell label="المبلغ الواصل" value={receivedAmount} />
+          <InvoiceAmountCell label="المبلغ المتبقي" value={remainingAmount} accent />
+        </div>
+
+        <div className="rounded-[16px] border border-black/10 bg-[#fcfcfc] px-3 py-2 print:rounded-[8px] print:px-[2mm] print:py-[1.4mm]">
+          <p className="mb-1 text-[10px] font-semibold text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">الملاحظات</p>
+          <p className="whitespace-pre-wrap text-[11px] leading-6 text-black/75 print:text-[7px] print:leading-[1.45]">
+            {notes || "لا توجد ملاحظات مضافة على هذا الطلب."}
+          </p>
+        </div>
+      </div>
+
+      {showDivider ? (
+        <div className="mt-3 border-t border-dashed border-black/15 pt-1 print:mt-[2.4mm] print:pt-[0.2mm]" />
+      ) : null}
+    </section>
+  );
+}
+
+function InvoiceCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[16px] border border-black/10 bg-[#fcfcfc] px-3 py-2 print:rounded-[8px] print:px-[2mm] print:py-[1.2mm]">
+      <p className="mb-1 text-[10px] text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">{label}</p>
+      <p className="text-[12px] font-semibold text-black print:text-[7.4px]">{value}</p>
     </div>
   );
 }
 
-function InvoiceAmountCard({
+function InvoiceAmountCell({
   label,
   value,
   accent = false,
@@ -145,14 +186,12 @@ function InvoiceAmountCard({
   return (
     <div
       className={[
-        "rounded-[26px] border p-5 print:rounded-[16px] print:bg-white print:p-3",
-        accent
-          ? "border-ajn-gold/30 bg-ajn-gold/[0.08] print:border-[#c8a132]"
-          : "border-ajn-line bg-black/20 print:border-neutral-300",
+        "rounded-[16px] border px-3 py-2 print:rounded-[8px] print:px-[2mm] print:py-[1.2mm]",
+        accent ? "border-[#d4af37]/35 bg-[#faf7eb]" : "border-black/10 bg-[#fcfcfc]",
       ].join(" ")}
     >
-      <p className="mb-2 text-sm text-ajn-goldSoft print:mb-1 print:text-[10px] print:text-[#8a6a10]">{label}</p>
-      <p className="text-2xl font-bold text-white print:text-lg print:text-black">{value}</p>
+      <p className="mb-1 text-[10px] text-[#8a6a10] print:mb-[0.8mm] print:text-[6.8px]">{label}</p>
+      <p className="text-[12px] font-bold text-black print:text-[7.4px]">{value}</p>
     </div>
   );
 }
