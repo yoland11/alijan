@@ -1,7 +1,10 @@
 import clsx, { type ClassValue } from "clsx";
 
-import { ORDER_STATUSES } from "@/lib/constants";
-import type { OrderRecord } from "@/lib/types";
+import {
+  DEFAULT_ORDER_STATUS_STEPS,
+  SESSION_ORDER_STATUS_STEPS,
+} from "@/lib/constants";
+import type { OrderRecord, OrderStatus, ServiceType } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -191,13 +194,57 @@ export function normalizeTrackingQuery(query: string) {
   return "";
 }
 
-export function getStatusIndex(status: OrderRecord["status"]) {
-  return ORDER_STATUSES.findIndex((item) => item === status);
+export function getOrderStatusSteps(serviceType: ServiceType = "Album") {
+  return serviceType === "Session" ? SESSION_ORDER_STATUS_STEPS : DEFAULT_ORDER_STATUS_STEPS;
+}
+
+export function normalizeStatusForService(
+  status: OrderStatus,
+  serviceType: ServiceType = "Album",
+) {
+  if (serviceType !== "Session") {
+    return status;
+  }
+
+  if (status === "جاري التجهيز") {
+    return "قيد التنفيذ";
+  }
+
+  return status;
+}
+
+export function getOrderStatusLabel(
+  status: OrderStatus,
+  serviceType: ServiceType = "Album",
+) {
+  const normalizedStatus = normalizeStatusForService(status, serviceType);
+  const matchedStep = getOrderStatusSteps(serviceType).find((item) => item.value === normalizedStatus);
+
+  return matchedStep?.label ?? status;
+}
+
+export function getOrderStatusDescription(
+  status: OrderStatus,
+  serviceType: ServiceType = "Album",
+) {
+  const normalizedStatus = normalizeStatusForService(status, serviceType);
+  const matchedStep = getOrderStatusSteps(serviceType).find((item) => item.value === normalizedStatus);
+
+  return matchedStep?.description ?? "";
+}
+
+export function getStatusIndex(
+  status: OrderRecord["status"],
+  serviceType: ServiceType = "Album",
+) {
+  const normalizedStatus = normalizeStatusForService(status, serviceType);
+  return getOrderStatusSteps(serviceType).findIndex((item) => item.value === normalizedStatus);
 }
 
 export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {
   return {
     ...rawOrder,
+    photographer: typeof rawOrder.photographer === "string" ? rawOrder.photographer : "",
     total_amount: parseAmountValue(rawOrder.total_amount as string | number | null | undefined),
     received_amount: parseAmountValue(rawOrder.received_amount as string | number | null | undefined),
     remaining_amount: parseAmountValue(rawOrder.remaining_amount as string | number | null | undefined),

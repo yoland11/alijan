@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ORDER_STATUSES, SERVICE_TYPE_LABELS, SERVICE_TYPES } from "@/lib/constants";
+import { PHOTOGRAPHER_OPTIONS, SERVICE_TYPE_LABELS, SERVICE_TYPES } from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
 import {
   buildOrderCode,
@@ -17,6 +17,8 @@ import {
   calculateRemainingAmount,
   formatAmountInputValue,
   formatAmountWithCurrency,
+  getOrderStatusSteps,
+  normalizeStatusForService,
 } from "@/lib/utils";
 import { orderSchema } from "@/lib/validators";
 import type { z } from "zod";
@@ -36,6 +38,7 @@ const defaultValues: OrderFormInput = {
   name: "",
   phone: "",
   service_type: "Album",
+  photographer: "",
   booking_date: new Date().toISOString().split("T")[0],
   status: "تم الحجز",
   notes: "",
@@ -59,10 +62,14 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   });
 
   const phone = useWatch({ control, name: "phone" });
+  const serviceType = useWatch({ control, name: "service_type" }) ?? "Album";
+  const photographer = useWatch({ control, name: "photographer" }) ?? "";
+  const currentStatus = useWatch({ control, name: "status" }) ?? "تم الحجز";
   const images = useWatch({ control, name: "images" }) ?? [];
   const totalAmountInput = useWatch({ control, name: "total_amount" }) ?? "0";
   const receivedAmountInput = useWatch({ control, name: "received_amount" }) ?? "0";
   const remainingAmount = calculateRemainingAmount(totalAmountInput, receivedAmountInput);
+  const availableStatuses = getOrderStatusSteps(serviceType);
 
   useEffect(() => {
     if (!open) {
@@ -75,8 +82,9 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             name: order.name,
             phone: order.phone,
             service_type: order.service_type,
+            photographer: order.photographer,
             booking_date: order.booking_date,
-            status: order.status,
+            status: normalizeStatusForService(order.status, order.service_type),
             notes: order.notes,
             images: order.images,
             total_amount: formatAmountInputValue(order.total_amount),
@@ -91,6 +99,22 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
 
     return () => window.clearTimeout(timeout);
   }, [open, order, reset]);
+
+  useEffect(() => {
+    if (serviceType !== "Session") {
+      if (photographer) {
+        setValue("photographer", "", { shouldDirty: true, shouldValidate: true });
+      }
+
+      return;
+    }
+
+    const normalizedStatus = normalizeStatusForService(currentStatus, serviceType);
+
+    if (normalizedStatus !== currentStatus) {
+      setValue("status", normalizedStatus, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [currentStatus, photographer, serviceType, setValue]);
 
   if (!open) {
     return null;
@@ -150,6 +174,25 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                 </Select>
               </div>
 
+              {serviceType === "Session" ? (
+                <div>
+                  <label className="mb-2 block text-sm text-ajn-goldSoft">كادر التصوير</label>
+                  <Select {...register("photographer")}>
+                    <option value="" className="bg-black">
+                      اختر الكادر
+                    </option>
+                    {PHOTOGRAPHER_OPTIONS.map((member) => (
+                      <option key={member} value={member} className="bg-black">
+                        {member}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.photographer ? (
+                    <p className="mt-2 text-sm text-red-300">{errors.photographer.message}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div>
                 <label className="mb-2 block text-sm text-ajn-goldSoft">تاريخ الحجز</label>
                 <Input type="date" {...register("booking_date")} />
@@ -158,9 +201,9 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
               <div>
                 <label className="mb-2 block text-sm text-ajn-goldSoft">الحالة</label>
                 <Select {...register("status")}>
-                  {ORDER_STATUSES.map((status) => (
-                    <option key={status} value={status} className="bg-black">
-                      {status}
+                  {availableStatuses.map((status) => (
+                    <option key={status.value} value={status.value} className="bg-black">
+                      {status.label}
                     </option>
                   ))}
                 </Select>

@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Images, MessageCircleMore, Phone } from "lucide-react";
+import { CalendarDays, Camera, Clock3, Images, MessageCircleMore, Phone } from "lucide-react";
 import Image from "next/image";
 
 import { StatusTimeline } from "@/components/tracking/status-timeline";
@@ -26,11 +26,11 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
               <p className="mb-2 text-sm text-ajn-goldSoft">تفاصيل الطلب</p>
               <h2 className="text-3xl font-bold text-white">{order.order_code}</h2>
             </div>
-            <StatusBadge status={order.status} />
+            <StatusBadge status={order.status} serviceType={order.service_type} />
           </div>
 
           <div className="space-y-5">
-            <StatusProgressBar status={order.status} />
+            <StatusProgressBar status={order.status} serviceType={order.service_type} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <InfoCard icon={<Phone className="h-4 w-4" />} label="العميل" value={order.name} />
@@ -45,11 +45,18 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                 label="تاريخ الحجز"
                 value={formatDateOnly(order.booking_date)}
               />
+              {order.service_type === "Session" && order.photographer ? (
+                <InfoCard
+                  icon={<Camera className="h-4 w-4" />}
+                  label="كادر التصوير"
+                  value={order.photographer}
+                />
+              ) : null}
               <InfoCard
                 icon={<Clock3 className="h-4 w-4" />}
                 label="آخر تحديث"
                 value={formatDateTime(order.updated_at)}
-                className="sm:col-span-2"
+                className={order.service_type === "Session" && order.photographer ? "" : "sm:col-span-2"}
               />
             </div>
 
@@ -130,7 +137,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
         </div>
       </div>
 
-      <StatusTimeline status={order.status} />
+      <StatusTimeline status={order.status} serviceType={order.service_type} />
     </div>
   );
 }

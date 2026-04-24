@@ -1,6 +1,11 @@
-import { ORDER_STATUSES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
-import type { OrderStatus } from "@/lib/types";
+import {
+  cn,
+  getOrderStatusLabel,
+  getOrderStatusSteps,
+  getStatusIndex,
+  normalizeStatusForService,
+} from "@/lib/utils";
+import type { OrderStatus, ServiceType } from "@/lib/types";
 
 const toneMap: Record<OrderStatus, string> = {
   "تم الحجز": "bg-white/8 text-white",
@@ -12,22 +17,38 @@ const toneMap: Record<OrderStatus, string> = {
   "تم التسليم": "bg-ajn-gold/18 text-ajn-goldSoft",
 };
 
-export function StatusBadge({ status }: { status: OrderStatus }) {
+export function StatusBadge({
+  status,
+  serviceType = "Album",
+}: {
+  status: OrderStatus;
+  serviceType?: ServiceType;
+}) {
+  const toneStatus = normalizeStatusForService(status, serviceType);
+
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-        toneMap[status],
+        toneMap[toneStatus],
       )}
     >
-      {status}
+      {getOrderStatusLabel(status, serviceType)}
     </span>
   );
 }
 
-export function StatusProgressBar({ status }: { status: OrderStatus }) {
-  const currentIndex = ORDER_STATUSES.findIndex((item) => item === status);
-  const percentage = ((currentIndex + 1) / ORDER_STATUSES.length) * 100;
+export function StatusProgressBar({
+  status,
+  serviceType = "Album",
+}: {
+  status: OrderStatus;
+  serviceType?: ServiceType;
+}) {
+  const steps = getOrderStatusSteps(serviceType);
+  const currentIndex = getStatusIndex(status, serviceType);
+  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+  const percentage = ((safeIndex + 1) / steps.length) * 100;
 
   return (
     <div className="h-2 overflow-hidden rounded-full bg-white/8">

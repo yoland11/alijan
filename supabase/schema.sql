@@ -6,6 +6,7 @@ create table if not exists public.orders (
   name text not null,
   phone text not null,
   service_type text not null check (service_type in ('Album', 'Session', 'Koshat', 'Gifts', 'Research')),
+  photographer text not null default ''::text,
   booking_date date not null,
   status text not null check (
     status in (

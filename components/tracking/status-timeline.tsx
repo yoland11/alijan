@@ -1,11 +1,17 @@
 import { CheckCircle2, Circle } from "lucide-react";
 
-import { ORDER_STATUSES, STATUS_DESCRIPTIONS } from "@/lib/constants";
-import { cn, getStatusIndex } from "@/lib/utils";
-import type { OrderStatus } from "@/lib/types";
+import { cn, getOrderStatusSteps, getStatusIndex } from "@/lib/utils";
+import type { OrderStatus, ServiceType } from "@/lib/types";
 
-export function StatusTimeline({ status }: { status: OrderStatus }) {
-  const currentIndex = getStatusIndex(status);
+export function StatusTimeline({
+  status,
+  serviceType,
+}: {
+  status: OrderStatus;
+  serviceType: ServiceType;
+}) {
+  const currentIndex = getStatusIndex(status, serviceType);
+  const steps = getOrderStatusSteps(serviceType);
 
   return (
     <div className="surface-panel p-6 sm:p-7">
@@ -15,12 +21,12 @@ export function StatusTimeline({ status }: { status: OrderStatus }) {
       </div>
 
       <div className="relative space-y-6 before:absolute before:right-[18px] before:top-4 before:h-[calc(100%-2rem)] before:w-px before:bg-white/10">
-        {ORDER_STATUSES.map((item, index) => {
+        {steps.map((item, index) => {
           const completed = index < currentIndex;
           const active = index === currentIndex;
 
           return (
-            <div key={item} className="relative flex gap-4">
+            <div key={`${item.value}-${index}`} className="relative flex gap-4">
               <div
                 className={cn(
                   "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border",
@@ -40,7 +46,7 @@ export function StatusTimeline({ status }: { status: OrderStatus }) {
                       active || completed ? "text-white" : "text-white/60",
                     )}
                   >
-                    {item}
+                    {item.label}
                   </h4>
                   {active ? (
                     <span className="rounded-full bg-ajn-gold/15 px-3 py-1 text-xs font-semibold text-ajn-gold">
@@ -49,7 +55,7 @@ export function StatusTimeline({ status }: { status: OrderStatus }) {
                   ) : null}
                 </div>
                 <p className="max-w-2xl text-sm leading-7 text-ajn-muted">
-                  {STATUS_DESCRIPTIONS[item]}
+                  {item.description}
                 </p>
               </div>
             </div>

@@ -186,7 +186,7 @@ export function TrackingPageClient() {
                       <p className="text-lg font-semibold text-white">{order.order_code}</p>
                       <p className="text-sm text-ajn-muted">{order.name}</p>
                     </div>
-                    <StatusBadge status={order.status} />
+                    <StatusBadge status={order.status} serviceType={order.service_type} />
                   </div>
                   <div className="grid gap-2 text-sm text-ajn-muted sm:grid-cols-2">
                     <span>الخدمة: {SERVICE_TYPE_LABELS[order.service_type]}</span>

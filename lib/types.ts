@@ -9,6 +9,7 @@ export interface OrderRecord {
   name: string;
   phone: string;
   service_type: ServiceType;
+  photographer: string;
   booking_date: string;
   status: OrderStatus;
   notes: string;
@@ -24,6 +25,7 @@ export interface OrderFormValues {
   name: string;
   phone: string;
   service_type: ServiceType;
+  photographer: string;
   booking_date: string;
   status: OrderStatus;
   notes: string;

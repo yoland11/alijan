@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ORDER_STATUSES, SERVICE_TYPES } from "@/lib/constants";
+import { ORDER_STATUSES, PHOTOGRAPHER_OPTIONS, SERVICE_TYPES } from "@/lib/constants";
 import { calculateRemainingAmount, normalizePhone, parseAmountValue } from "@/lib/utils";
 
 const amountFieldSchema = z
@@ -24,6 +24,10 @@ export const orderSchema = z
     service_type: z.enum(SERVICE_TYPES, {
       error: "يرجى اختيار نوع الخدمة.",
     }),
+    photographer: z
+      .string()
+      .optional()
+      .transform((value) => value?.trim() ?? ""),
     booking_date: z.string().min(1, "يرجى تحديد تاريخ الحجز."),
     status: z.enum(ORDER_STATUSES, {
       error: "يرجى اختيار الحالة.",
@@ -41,9 +45,30 @@ export const orderSchema = z
         message: "المبلغ الواصل لا يمكن أن يكون أكبر من المبلغ الكلي.",
       });
     }
+
+    if (value.service_type === "Session") {
+      if (!value.photographer) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["photographer"],
+          message: "يرجى اختيار كادر التصوير.",
+        });
+      } else if (
+        !PHOTOGRAPHER_OPTIONS.includes(
+          value.photographer as (typeof PHOTOGRAPHER_OPTIONS)[number],
+        )
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["photographer"],
+          message: "يرجى اختيار كادر تصوير صالح.",
+        });
+      }
+    }
   })
   .transform((value) => ({
     ...value,
+    photographer: value.service_type === "Session" ? value.photographer : "",
     remaining_amount: calculateRemainingAmount(value.total_amount, value.received_amount),
   }));
 

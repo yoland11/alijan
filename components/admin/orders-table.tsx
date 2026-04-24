@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SERVICE_TYPE_LABELS } from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
-import { formatAmountWithCurrency, formatDateOnly, formatDateTime } from "@/lib/utils";
+import {
+  formatAmountWithCurrency,
+  formatDateOnly,
+  formatDateTime,
+  getOrderStatusLabel,
+} from "@/lib/utils";
 
 interface OrdersTableProps {
   orders: OrderRecord[];
@@ -58,10 +63,15 @@ export function OrdersTable({
                 </td>
                 <td className="px-5 py-4 text-sm font-semibold text-ajn-gold">{order.order_code}</td>
                 <td className="px-5 py-4 text-sm text-ajn-ivory">
-                  {SERVICE_TYPE_LABELS[order.service_type]}
+                  <div className="space-y-1">
+                    <p>{SERVICE_TYPE_LABELS[order.service_type]}</p>
+                    {order.service_type === "Session" && order.photographer ? (
+                      <p className="text-xs text-ajn-muted">كادر التصوير: {order.photographer}</p>
+                    ) : null}
+                  </div>
                 </td>
                 <td className="px-5 py-4">
-                  <StatusBadge status={order.status} />
+                  <StatusBadge status={order.status} serviceType={order.service_type} />
                 </td>
                 <td className="px-5 py-4">
                   <OrderAmountsSummary order={order} />
@@ -123,13 +133,21 @@ export function OrdersTable({
                 <h3 className="text-lg font-bold text-white">{order.name}</h3>
                 <p className="text-sm text-ajn-muted">{order.order_code}</p>
               </div>
-              <StatusBadge status={order.status} />
+              <StatusBadge status={order.status} serviceType={order.service_type} />
             </div>
             <div className="grid gap-2 text-sm text-ajn-muted sm:grid-cols-2">
               <p>الخدمة: {SERVICE_TYPE_LABELS[order.service_type]}</p>
+              {order.service_type === "Session" && order.photographer ? (
+                <p>كادر التصوير: {order.photographer}</p>
+              ) : null}
               <p>الهاتف: {order.phone}</p>
               <p>الحجز: {formatDateOnly(order.booking_date)}</p>
-              <p>آخر تحديث: {formatDateTime(order.updated_at)}</p>
+              <p>
+                الحالة: {getOrderStatusLabel(order.status, order.service_type)}
+              </p>
+              <p className={order.service_type === "Session" && order.photographer ? "" : "sm:col-span-2"}>
+                آخر تحديث: {formatDateTime(order.updated_at)}
+              </p>
             </div>
             <div className="mt-4">
               <OrderAmountsSummary order={order} card />

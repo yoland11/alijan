@@ -78,6 +78,7 @@ export function DashboardClient() {
         order.name,
         order.phone,
         order.order_code,
+        order.photographer,
         order.notes,
         order.total_amount,
         order.received_amount,
@@ -86,16 +87,22 @@ export function DashboardClient() {
         .join(" ")
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "الكل" || order.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "الكل"
+        ? true
+        : statusFilter === "الطلبات النشطة"
+          ? !COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number])
+          : statusFilter === "تم الاكتمال"
+            ? order.status === "مكتمل"
+            : order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const completedOrders = orders.filter((order) =>
-    COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number]),
-  ).length;
-  const inProgressOrders = orders.filter(
+  const activeOrders = orders.filter(
     (order) => !COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number]),
   ).length;
+  const completedOrders = orders.filter((order) => order.status === "مكتمل").length;
+  const deliveredOrders = orders.filter((order) => order.status === "تم التسليم").length;
 
   const submitOrder = async (values: OrderSchema, files: File[]) => {
     setBusy(true);
@@ -230,10 +237,35 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              <MetricCard title="إجمالي الطلبات" value={orders.length} subtitle="جميع الطلبات المسجلة" />
-              <MetricCard title="الطلبات المكتملة" value={completedOrders} subtitle="مكتمل + تم التسليم" />
-              <MetricCard title="طلبات قيد العمل" value={inProgressOrders} subtitle="مراحل التنفيذ الحالية" />
+            <div className="grid gap-4 lg:grid-cols-4">
+              <MetricCard
+                title="إجمالي الطلبات"
+                value={orders.length}
+                subtitle="جميع الطلبات المسجلة"
+                active={statusFilter === "الكل"}
+                onClick={() => setStatusFilter("الكل")}
+              />
+              <MetricCard
+                title="الطلبات النشطة"
+                value={activeOrders}
+                subtitle="الطلبات قيد التنفيذ"
+                active={statusFilter === "الطلبات النشطة"}
+                onClick={() => setStatusFilter("الطلبات النشطة")}
+              />
+              <MetricCard
+                title="تم الاكتمال"
+                value={completedOrders}
+                subtitle="طلبات جاهزة للتسليم"
+                active={statusFilter === "تم الاكتمال"}
+                onClick={() => setStatusFilter("تم الاكتمال")}
+              />
+              <MetricCard
+                title="تم التسليم"
+                value={deliveredOrders}
+                subtitle="طلبات تم تسليمها"
+                active={statusFilter === "تم التسليم"}
+                onClick={() => setStatusFilter("تم التسليم")}
+              />
             </div>
           </header>
 
@@ -245,7 +277,7 @@ export function DashboardClient() {
               </div>
               <div className="flex items-center gap-2 rounded-full border border-ajn-line bg-white/[0.03] px-4 py-2 text-sm text-ajn-muted">
                 <ChartColumnBig className="h-4 w-4 text-ajn-gold" />
-                {ORDER_STATUSES.length} مراحل متابعة
+                {ORDER_STATUSES.length} حالات تشغيل + فرز ذكي
               </div>
             </div>
 
@@ -255,7 +287,7 @@ export function DashboardClient() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="ابحث بالاسم أو الهاتف أو الكود أو الملاحظات"
+                  placeholder="ابحث بالاسم أو الهاتف أو الكود أو الملاحظات أو كادر التصوير"
                   className="pr-11"
                 />
               </div>
@@ -271,7 +303,7 @@ export function DashboardClient() {
                 >
                   {DASHBOARD_STATUS_FILTERS.map((status) => (
                     <option key={status} value={status} className="bg-black">
-                      {status}
+                      {getDashboardFilterLabel(status)}
                     </option>
                   ))}
                 </Select>
@@ -319,13 +351,25 @@ function MetricCard({
   title,
   value,
   subtitle,
+  active = false,
+  onClick,
 }: {
   title: string;
   value: number;
   subtitle: string;
+  active?: boolean;
+  onClick?: () => void;
 }) {
   return (
-    <div className="rounded-[26px] border border-ajn-line bg-white/[0.03] p-5">
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[26px] border p-5 text-right transition ${
+        active
+          ? "border-ajn-gold/40 bg-ajn-gold/[0.08]"
+          : "border-ajn-line bg-white/[0.03] hover:border-ajn-gold/30 hover:bg-white/[0.05]"
+      }`}
+    >
       <p className="mb-3 text-sm text-ajn-goldSoft">{title}</p>
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="text-4xl font-bold text-white">{value}</span>
@@ -334,6 +378,25 @@ function MetricCard({
         </span>
       </div>
       <p className="text-sm text-ajn-muted">{subtitle}</p>
-    </div>
+    </button>
   );
+}
+
+function getDashboardFilterLabel(filter: (typeof DASHBOARD_STATUS_FILTERS)[number]) {
+  switch (filter) {
+    case "الطلبات النشطة":
+      return "الطلبات النشطة";
+    case "تم الاكتمال":
+      return "تم الاكتمال";
+    case "قيد التنفيذ":
+      return "قيد التنفيذ / جاري المتابعة";
+    case "جاري التصوير":
+      return "جاري التصوير / أثناء التصوير";
+    case "المونتاج":
+      return "المونتاج / قيد المونتاج";
+    case "مكتمل":
+      return "مكتمل / جاهز للتسليم";
+    default:
+      return filter;
+  }
 }
