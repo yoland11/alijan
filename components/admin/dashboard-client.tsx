@@ -79,6 +79,7 @@ export function DashboardClient() {
         order.phone,
         order.order_code,
         order.photographer,
+        order.session_type,
         order.notes,
         order.total_amount,
         order.received_amount,
@@ -287,7 +288,7 @@ export function DashboardClient() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="ابحث بالاسم أو الهاتف أو الكود أو الملاحظات أو كادر التصوير"
+                  placeholder="ابحث بالاسم أو الهاتف أو الكود أو الملاحظات أو الكادر أو نوع الجلسة"
                   className="pr-11"
                 />
               </div>

@@ -9,16 +9,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PHOTOGRAPHER_OPTIONS, SERVICE_TYPE_LABELS, SERVICE_TYPES } from "@/lib/constants";
+import {
+  ALBUM_SESSION_TYPES,
+  PHOTOGRAPHER_OPTIONS,
+  SERVICE_TYPE_LABELS,
+  SERVICE_TYPES,
+} from "@/lib/constants";
 import type { OrderRecord } from "@/lib/types";
 import {
   buildOrderCode,
   buildOrderImageProxyUrl,
   calculateRemainingAmount,
+  cn,
   formatAmountInputValue,
   formatAmountWithCurrency,
+  getStaffFieldLabel,
   getOrderStatusSteps,
+  normalizePhone,
   normalizeStatusForService,
+  supportsAlbumSessionType,
+  supportsStaffField,
 } from "@/lib/utils";
 import { orderSchema } from "@/lib/validators";
 import type { z } from "zod";
@@ -39,6 +49,7 @@ const defaultValues: OrderFormInput = {
   phone: "",
   service_type: "Album",
   photographer: "",
+  session_type: "",
   booking_date: new Date().toISOString().split("T")[0],
   status: "تم الحجز",
   notes: "",
@@ -64,12 +75,18 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   const phone = useWatch({ control, name: "phone" });
   const serviceType = useWatch({ control, name: "service_type" }) ?? "Album";
   const photographer = useWatch({ control, name: "photographer" }) ?? "";
+  const sessionType = useWatch({ control, name: "session_type" }) ?? "";
   const currentStatus = useWatch({ control, name: "status" }) ?? "تم الحجز";
   const images = useWatch({ control, name: "images" }) ?? [];
   const totalAmountInput = useWatch({ control, name: "total_amount" }) ?? "0";
   const receivedAmountInput = useWatch({ control, name: "received_amount" }) ?? "0";
   const remainingAmount = calculateRemainingAmount(totalAmountInput, receivedAmountInput);
   const availableStatuses = getOrderStatusSteps(serviceType);
+  const shouldShowStaffField = supportsStaffField(serviceType);
+  const shouldShowAlbumSessionType = supportsAlbumSessionType(serviceType);
+  const staffFieldLabel = getStaffFieldLabel(serviceType);
+  const phoneField = register("phone");
+  const sessionTypeField = register("session_type");
 
   useEffect(() => {
     if (!open) {
@@ -83,6 +100,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             phone: order.phone,
             service_type: order.service_type,
             photographer: order.photographer,
+            session_type: order.session_type,
             booking_date: order.booking_date,
             status: normalizeStatusForService(order.status, order.service_type),
             notes: order.notes,
@@ -101,20 +119,32 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   }, [open, order, reset]);
 
   useEffect(() => {
-    if (serviceType !== "Session") {
+    if (!shouldShowStaffField) {
       if (photographer) {
         setValue("photographer", "", { shouldDirty: true, shouldValidate: true });
       }
-
-      return;
     }
 
-    const normalizedStatus = normalizeStatusForService(currentStatus, serviceType);
-
-    if (normalizedStatus !== currentStatus) {
-      setValue("status", normalizedStatus, { shouldDirty: true, shouldValidate: true });
+    if (!shouldShowAlbumSessionType && sessionType) {
+      setValue("session_type", "", { shouldDirty: true, shouldValidate: true });
     }
-  }, [currentStatus, photographer, serviceType, setValue]);
+
+    if (serviceType === "Session") {
+      const normalizedStatus = normalizeStatusForService(currentStatus, serviceType);
+
+      if (normalizedStatus !== currentStatus) {
+        setValue("status", normalizedStatus, { shouldDirty: true, shouldValidate: true });
+      }
+    }
+  }, [
+    currentStatus,
+    photographer,
+    serviceType,
+    sessionType,
+    setValue,
+    shouldShowAlbumSessionType,
+    shouldShowStaffField,
+  ]);
 
   if (!open) {
     return null;
@@ -159,7 +189,17 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
 
               <div>
                 <label className="mb-2 block text-sm text-ajn-goldSoft">رقم الهاتف</label>
-                <Input {...register("phone")} placeholder="96477..." dir="ltr" />
+                <Input
+                  {...phoneField}
+                  placeholder="96477..."
+                  dir="ltr"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  onChange={(event) => {
+                    event.target.value = normalizePhone(event.target.value);
+                    phoneField.onChange(event);
+                  }}
+                />
                 {errors.phone ? <p className="mt-2 text-sm text-red-300">{errors.phone.message}</p> : null}
               </div>
 
@@ -174,21 +214,97 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                 </Select>
               </div>
 
-              {serviceType === "Session" ? (
+              {shouldShowStaffField ? (
                 <div>
-                  <label className="mb-2 block text-sm text-ajn-goldSoft">كادر التصوير</label>
-                  <Select {...register("photographer")}>
-                    <option value="" className="bg-black">
-                      اختر الكادر
-                    </option>
-                    {PHOTOGRAPHER_OPTIONS.map((member) => (
-                      <option key={member} value={member} className="bg-black">
-                        {member}
+                  <label className="mb-2 block text-sm text-ajn-goldSoft">{staffFieldLabel}</label>
+                  {serviceType === "Session" ? (
+                    <Select {...register("photographer")}>
+                      <option value="" className="bg-black">
+                        اختر الكادر
                       </option>
-                    ))}
-                  </Select>
+                      {PHOTOGRAPHER_OPTIONS.map((member) => (
+                        <option key={member} value={member} className="bg-black">
+                          {member}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Select {...register("photographer")}>
+                      <option value="" className="bg-black">
+                        اختر اسم الكادر
+                      </option>
+                      {PHOTOGRAPHER_OPTIONS.map((member) => (
+                        <option key={member} value={member} className="bg-black">
+                          {member}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                   {errors.photographer ? (
                     <p className="mt-2 text-sm text-red-300">{errors.photographer.message}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {shouldShowAlbumSessionType ? (
+                <div>
+                  <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الجلسة</label>
+                  <input type="hidden" {...sessionTypeField} value={sessionType} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {ALBUM_SESSION_TYPES.map((type) => {
+                      const selected = sessionType === type;
+
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className={cn(
+                            "group rounded-[24px] border px-4 py-4 text-right transition duration-300",
+                            "hover:-translate-y-0.5 hover:border-ajn-gold/45 hover:bg-white/[0.06]",
+                            "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ajn-gold/20",
+                            selected
+                              ? "border-ajn-gold bg-ajn-gold/[0.12] shadow-[0_12px_30px_rgba(212,175,55,0.14)]"
+                              : "border-ajn-line bg-white/[0.03]",
+                          )}
+                          onClick={() =>
+                            setValue("session_type", type, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p
+                                className={cn(
+                                  "text-base font-semibold transition",
+                                  selected ? "text-ajn-gold" : "text-white",
+                                )}
+                              >
+                                {type}
+                              </p>
+                              <p className="mt-1 text-xs text-ajn-muted">
+                                {type === "داخلي"
+                                  ? "جلسة داخل الاستوديو أو موقع داخلي مجهز"
+                                  : "جلسة خارجية في موقع مفتوح أو خارجي"}
+                              </p>
+                            </div>
+                            <span
+                              className={cn(
+                                "h-4 w-4 rounded-full border transition",
+                                selected
+                                  ? "border-ajn-gold bg-ajn-gold shadow-[0_0_0_4px_rgba(212,175,55,0.15)]"
+                                  : "border-white/20 bg-white/[0.04] group-hover:border-ajn-gold/45",
+                              )}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.session_type ? (
+                    <p className="mt-2 text-sm text-red-300">{errors.session_type.message}</p>
                   ) : null}
                 </div>
               ) : null}

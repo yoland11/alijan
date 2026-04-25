@@ -1,10 +1,11 @@
 import clsx, { type ClassValue } from "clsx";
 
 import {
+  ALBUM_SESSION_TYPES,
   DEFAULT_ORDER_STATUS_STEPS,
   SESSION_ORDER_STATUS_STEPS,
 } from "@/lib/constants";
-import type { OrderRecord, OrderStatus, ServiceType } from "@/lib/types";
+import type { AlbumSessionType, OrderRecord, OrderStatus, ServiceType } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -39,6 +40,28 @@ export function normalizeArabicDigits(value: string) {
 
 export function normalizePhone(phone: string) {
   return normalizeArabicDigits(phone).replace(/\D/g, "");
+}
+
+export function supportsStaffField(serviceType: ServiceType = "Album") {
+  return serviceType === "Album" || serviceType === "Session";
+}
+
+export function supportsAlbumSessionType(serviceType: ServiceType = "Album") {
+  return serviceType === "Album";
+}
+
+export function getStaffFieldLabel(serviceType: ServiceType = "Album") {
+  return serviceType === "Session" ? "كادر التصوير" : "اسم الكادر";
+}
+
+export function normalizeAlbumSessionType(value: unknown): AlbumSessionType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return ALBUM_SESSION_TYPES.includes(value as AlbumSessionType)
+    ? (value as AlbumSessionType)
+    : "";
 }
 
 export function parseAmountValue(value: string | number | null | undefined) {
@@ -245,6 +268,7 @@ export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {
   return {
     ...rawOrder,
     photographer: typeof rawOrder.photographer === "string" ? rawOrder.photographer : "",
+    session_type: normalizeAlbumSessionType(rawOrder.session_type),
     total_amount: parseAmountValue(rawOrder.total_amount as string | number | null | undefined),
     received_amount: parseAmountValue(rawOrder.received_amount as string | number | null | undefined),
     remaining_amount: parseAmountValue(rawOrder.remaining_amount as string | number | null | undefined),

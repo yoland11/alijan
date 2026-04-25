@@ -11,6 +11,7 @@ import {
   formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
+  getStaffFieldLabel,
   maskPhone,
 } from "@/lib/utils";
 
@@ -45,18 +46,29 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                 label="تاريخ الحجز"
                 value={formatDateOnly(order.booking_date)}
               />
-              {order.service_type === "Session" && order.photographer ? (
+              {order.photographer ? (
                 <InfoCard
                   icon={<Camera className="h-4 w-4" />}
-                  label="كادر التصوير"
+                  label={getStaffFieldLabel(order.service_type)}
                   value={order.photographer}
+                />
+              ) : null}
+              {order.service_type === "Album" && order.session_type ? (
+                <InfoCard
+                  icon={<Images className="h-4 w-4" />}
+                  label="نوع الجلسة"
+                  value={order.session_type}
                 />
               ) : null}
               <InfoCard
                 icon={<Clock3 className="h-4 w-4" />}
                 label="آخر تحديث"
                 value={formatDateTime(order.updated_at)}
-                className={order.service_type === "Session" && order.photographer ? "" : "sm:col-span-2"}
+                className={
+                  order.photographer || (order.service_type === "Album" && order.session_type)
+                    ? ""
+                    : "sm:col-span-2"
+                }
               />
             </div>
 

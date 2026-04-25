@@ -1,5 +1,7 @@
 export const SERVICE_TYPES = ["Album", "Session", "Koshat", "Gifts", "Research"] as const;
 
+export const ALBUM_SESSION_TYPES = ["داخلي", "خارجي"] as const;
+
 export const PHOTOGRAPHER_OPTIONS = [
   "احمد تحسين",
   "محمد ايدن",
@@ -9,8 +11,8 @@ export const PHOTOGRAPHER_OPTIONS = [
 ] as const;
 
 export const SERVICE_TYPE_LABELS: Record<(typeof SERVICE_TYPES)[number], string> = {
-  Album: "ألبوم",
-  Session: "جلسة تصوير",
+  Album: "ألبومات",
+  Session: "التصوير",
   Koshat: "كوشات",
   Gifts: "هدايا",
   Research: "بحوث",

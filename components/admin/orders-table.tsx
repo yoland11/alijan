@@ -8,6 +8,7 @@ import {
   formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
+  getStaffFieldLabel,
   getOrderStatusLabel,
 } from "@/lib/utils";
 
@@ -65,8 +66,13 @@ export function OrdersTable({
                 <td className="px-5 py-4 text-sm text-ajn-ivory">
                   <div className="space-y-1">
                     <p>{SERVICE_TYPE_LABELS[order.service_type]}</p>
-                    {order.service_type === "Session" && order.photographer ? (
-                      <p className="text-xs text-ajn-muted">كادر التصوير: {order.photographer}</p>
+                    {order.photographer ? (
+                      <p className="text-xs text-ajn-muted">
+                        {getStaffFieldLabel(order.service_type)}: {order.photographer}
+                      </p>
+                    ) : null}
+                    {order.service_type === "Album" && order.session_type ? (
+                      <p className="text-xs text-ajn-muted">نوع الجلسة: {order.session_type}</p>
                     ) : null}
                   </div>
                 </td>
@@ -137,15 +143,26 @@ export function OrdersTable({
             </div>
             <div className="grid gap-2 text-sm text-ajn-muted sm:grid-cols-2">
               <p>الخدمة: {SERVICE_TYPE_LABELS[order.service_type]}</p>
-              {order.service_type === "Session" && order.photographer ? (
-                <p>كادر التصوير: {order.photographer}</p>
+              {order.photographer ? (
+                <p>
+                  {getStaffFieldLabel(order.service_type)}: {order.photographer}
+                </p>
+              ) : null}
+              {order.service_type === "Album" && order.session_type ? (
+                <p>نوع الجلسة: {order.session_type}</p>
               ) : null}
               <p>الهاتف: {order.phone}</p>
               <p>الحجز: {formatDateOnly(order.booking_date)}</p>
               <p>
                 الحالة: {getOrderStatusLabel(order.status, order.service_type)}
               </p>
-              <p className={order.service_type === "Session" && order.photographer ? "" : "sm:col-span-2"}>
+              <p
+                className={
+                  order.photographer || (order.service_type === "Album" && order.session_type)
+                    ? ""
+                    : "sm:col-span-2"
+                }
+              >
                 آخر تحديث: {formatDateTime(order.updated_at)}
               </p>
             </div>

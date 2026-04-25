@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { ORDER_STATUSES, PHOTOGRAPHER_OPTIONS, SERVICE_TYPES } from "@/lib/constants";
+import {
+  ALBUM_SESSION_TYPES,
+  ORDER_STATUSES,
+  PHOTOGRAPHER_OPTIONS,
+  SERVICE_TYPES,
+} from "@/lib/constants";
 import { calculateRemainingAmount, normalizePhone, parseAmountValue } from "@/lib/utils";
 
 const amountFieldSchema = z
@@ -25,6 +30,10 @@ export const orderSchema = z
       error: "يرجى اختيار نوع الخدمة.",
     }),
     photographer: z
+      .string()
+      .optional()
+      .transform((value) => value?.trim() ?? ""),
+    session_type: z
       .string()
       .optional()
       .transform((value) => value?.trim() ?? ""),
@@ -65,10 +74,52 @@ export const orderSchema = z
         });
       }
     }
+
+    if (value.service_type === "Album") {
+      if (!value.photographer) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["photographer"],
+          message: "يرجى اختيار اسم الكادر.",
+        });
+      } else if (
+        !PHOTOGRAPHER_OPTIONS.includes(
+          value.photographer as (typeof PHOTOGRAPHER_OPTIONS)[number],
+        )
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["photographer"],
+          message: "يرجى اختيار اسم كادر صالح.",
+        });
+      }
+
+      if (!value.session_type) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["session_type"],
+          message: "يرجى اختيار نوع الجلسة.",
+        });
+      } else if (
+        !ALBUM_SESSION_TYPES.includes(
+          value.session_type as (typeof ALBUM_SESSION_TYPES)[number],
+        )
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["session_type"],
+          message: "يرجى اختيار نوع جلسة صالح.",
+        });
+      }
+    }
   })
   .transform((value) => ({
     ...value,
-    photographer: value.service_type === "Session" ? value.photographer : "",
+    photographer:
+      value.service_type === "Session" || value.service_type === "Album"
+        ? value.photographer
+        : "",
+    session_type: value.service_type === "Album" ? value.session_type : "",
     remaining_amount: calculateRemainingAmount(value.total_amount, value.received_amount),
   }));
 
