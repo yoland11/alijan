@@ -1,46 +1,108 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ClipboardPlus, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-
-import { HomeSearchCard } from "@/components/home/home-search-card";
 
 export default function HomePage() {
   return (
     <div className="page-shell pb-24">
-      <div className="section-shell pt-8">
-        <nav className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-full border border-ajn-line bg-black/30 px-5 py-4 backdrop-blur-xl">
-          <div>
-            <p className="font-display text-xl uppercase tracking-[0.4em] text-ajn-goldSoft">AJN</p>
-            <p className="text-sm text-ajn-muted">Booking & Order Tracking</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Link className="text-ajn-muted transition hover:text-white" href="/track">
-              التتبع
-            </Link>
-            <Link className="text-ajn-muted transition hover:text-white" href="/admin/login">
-              الإدارة
-            </Link>
-          </div>
-        </nav>
-
-        <section className="py-8">
-          <div className="surface-panel mx-auto max-w-4xl p-6 sm:p-8">
-            <div className="mb-5">
-              <p className="mb-2 text-sm text-ajn-goldSoft">ابدأ من هنا</p>
-              <h2 className="text-3xl font-bold text-white">تتبع الطلب خلال ثوانٍ</h2>
+      <div className="section-shell space-y-8 pt-5 sm:space-y-10 sm:pt-8">
+        <section className="surface-panel-strong noise-overlay overflow-hidden p-5 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-ajn-line bg-white/[0.04] px-4 py-2 text-xs font-semibold text-ajn-goldSoft">
+                <ShieldCheck className="h-4 w-4" />
+                لوحة الإدارة
+              </div>
+              <h1 className="text-3xl font-bold text-white sm:text-4xl">
+                دخول الإدارة وإدارة الطلبات الداخلية
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-8 text-ajn-muted sm:text-base">
+                مساحة خاصة بالإدارة لمتابعة الحجوزات، تحديث الحالات، رفع الصور، إصدار
+                الفواتير، وإدارة الطلبات بشكل كامل ومنظم.
+              </p>
             </div>
 
-            <HomeSearchCard />
+            <Link
+              href="/admin/login"
+              className="group inline-flex w-full items-center justify-between gap-4 rounded-[28px] border border-ajn-line bg-white/[0.05] px-5 py-4 text-right transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/55 hover:bg-white/[0.08] sm:w-auto sm:min-w-[280px]"
+            >
+              <div className="flex items-center gap-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ajn-gold/15 text-ajn-gold">
+                  <ShieldCheck className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-base font-semibold text-white">دخول لوحة الإدارة</p>
+                  <p className="mt-1 text-xs text-ajn-muted">
+                    تسجيل دخول آمن لإدارة الحجوزات والطلبات
+                  </p>
+                </div>
+              </div>
+              <ArrowLeft className="h-5 w-5 text-ajn-gold transition group-hover:-translate-x-1" />
+            </Link>
+          </div>
+        </section>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/track"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-ajn-gold transition hover:text-ajn-goldSoft"
-              >
-                فتح صفحة التتبع الكاملة
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </div>
+        <section className="mx-auto max-w-5xl py-2 sm:py-6">
+          <div className="mb-6 text-center sm:mb-8">
+            <p className="mb-2 text-sm font-medium text-ajn-goldSoft">خدمات الزبون</p>
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">
+              اختر الخدمة المناسبة لك
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-8 text-ajn-muted sm:text-base">
+              يمكنك إرسال طلب جديد مباشرة إلى الإدارة أو متابعة حالة طلبك الحالي بسهولة
+              من خلال صفحة مخصصة وواضحة.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <Link
+              href="/book"
+              className="group surface-panel noise-overlay relative overflow-hidden rounded-[32px] border border-ajn-line/80 p-6 transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/55 hover:bg-white/[0.06] sm:p-7"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_45%)] opacity-70 transition duration-300 group-hover:opacity-100" />
+              <div className="relative flex h-full flex-col justify-between gap-8">
+                <div>
+                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[22px] border border-ajn-gold/20 bg-ajn-gold/10 text-ajn-gold shadow-[0_18px_40px_rgba(212,175,55,0.12)]">
+                    <ClipboardPlus className="h-6 w-6" />
+                  </span>
+                  <h3 className="text-2xl font-bold text-white">إنشاء طلب</h3>
+                  <p className="mt-3 text-sm leading-8 text-ajn-muted sm:text-base">
+                    احجز خدمتك بسهولة وأرسل تفاصيل طلبك مباشرة للإدارة.
+                  </p>
+                </div>
+
+                <div className="inline-flex items-center gap-3 text-sm font-semibold text-ajn-gold">
+                  <span className="inline-flex h-11 items-center rounded-2xl bg-ajn-gold px-5 text-black transition group-hover:bg-ajn-goldSoft">
+                    ابدأ الحجز
+                  </span>
+                  <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/track"
+              className="group surface-panel noise-overlay relative overflow-hidden rounded-[32px] border border-ajn-line/80 p-6 transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/55 hover:bg-white/[0.06] sm:p-7"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_42%)] opacity-80 transition duration-300 group-hover:opacity-100" />
+              <div className="relative flex h-full flex-col justify-between gap-8">
+                <div>
+                  <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-[22px] border border-white/12 bg-white/[0.05] text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)]">
+                    <Search className="h-6 w-6" />
+                  </span>
+                  <h3 className="text-2xl font-bold text-white">تتبع الطلب</h3>
+                  <p className="mt-3 text-sm leading-8 text-ajn-muted sm:text-base">
+                    أدخل رقم الطلب أو رقم الهاتف لمعرفة حالة طلبك.
+                  </p>
+                </div>
+
+                <div className="inline-flex items-center gap-3 text-sm font-semibold text-white">
+                  <span className="inline-flex h-11 items-center rounded-2xl border border-ajn-line bg-white/[0.05] px-5 transition group-hover:border-ajn-gold/45 group-hover:bg-white/[0.08]">
+                    تتبع الآن
+                  </span>
+                  <ArrowLeft className="h-4 w-4 text-ajn-gold transition group-hover:-translate-x-1" />
+                </div>
+              </div>
+            </Link>
           </div>
         </section>
       </div>

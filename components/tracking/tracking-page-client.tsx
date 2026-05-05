@@ -147,18 +147,18 @@ export function TrackingPageClient() {
   };
 
   return (
-    <div className="page-shell pb-24 pt-10">
+    <div className="page-shell pb-20 pt-6 sm:pb-24 sm:pt-10">
       <div className="section-shell space-y-8">
-        <header className="surface-panel-strong noise-overlay p-8 sm:p-10">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <header className="surface-panel-strong noise-overlay p-5 sm:p-10">
+          <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="mb-3 font-display text-lg uppercase tracking-[0.35em] text-ajn-goldSoft">
                 AJN Tracking
               </p>
-              <h1 className="text-4xl font-bold text-white sm:text-5xl">تابع طلبك بكل وضوح</h1>
+              <h1 className="text-3xl font-bold text-white sm:text-5xl">تابع طلبك بكل وضوح</h1>
             </div>
 
-            <div className="rounded-full border border-ajn-line bg-white/[0.03] px-4 py-2 text-sm text-ajn-muted">
+            <div className="w-full rounded-2xl border border-ajn-line bg-white/[0.03] px-4 py-2 text-center text-sm text-ajn-muted sm:w-auto sm:rounded-full">
               تحديثات فورية + عرض وسائط
             </div>
           </div>
@@ -167,7 +167,7 @@ export function TrackingPageClient() {
         </header>
 
         {results.length > 1 && !selectedOrder ? (
-          <section className="surface-panel p-6 sm:p-7">
+          <section className="surface-panel p-5 sm:p-7">
             <div className="mb-5 flex items-center gap-2 text-ajn-gold">
               <CheckCircle2 className="h-5 w-5" />
               <span className="text-sm font-semibold">تم العثور على أكثر من طلب مطابق</span>
@@ -181,7 +181,7 @@ export function TrackingPageClient() {
                   className="rounded-[26px] border border-ajn-line bg-white/[0.03] p-5 text-right transition hover:border-ajn-gold/40 hover:bg-white/[0.05]"
                   onClick={() => setSelectedOrder(order)}
                 >
-                  <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-lg font-semibold text-white">{order.order_code}</p>
                       <p className="text-sm text-ajn-muted">{order.name}</p>

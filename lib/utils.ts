@@ -3,9 +3,17 @@ import clsx, { type ClassValue } from "clsx";
 import {
   ALBUM_SESSION_TYPES,
   DEFAULT_ORDER_STATUS_STEPS,
+  KOSHAT_ORDER_STATUS_STEPS,
+  KOSHAT_TYPES,
   SESSION_ORDER_STATUS_STEPS,
 } from "@/lib/constants";
-import type { AlbumSessionType, OrderRecord, OrderStatus, ServiceType } from "@/lib/types";
+import type {
+  AlbumSessionType,
+  KoshatType,
+  OrderRecord,
+  OrderStatus,
+  ServiceType,
+} from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
@@ -50,6 +58,10 @@ export function supportsAlbumSessionType(serviceType: ServiceType = "Album") {
   return serviceType === "Album";
 }
 
+export function supportsKoshatType(serviceType: ServiceType = "Album") {
+  return serviceType === "Koshat";
+}
+
 export function getStaffFieldLabel(serviceType: ServiceType = "Album") {
   return serviceType === "Session" ? "كادر التصوير" : "اسم الكادر";
 }
@@ -62,6 +74,14 @@ export function normalizeAlbumSessionType(value: unknown): AlbumSessionType | ""
   return ALBUM_SESSION_TYPES.includes(value as AlbumSessionType)
     ? (value as AlbumSessionType)
     : "";
+}
+
+export function normalizeKoshatType(value: unknown): KoshatType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return KOSHAT_TYPES.includes(value as KoshatType) ? (value as KoshatType) : "";
 }
 
 export function parseAmountValue(value: string | number | null | undefined) {
@@ -218,7 +238,15 @@ export function normalizeTrackingQuery(query: string) {
 }
 
 export function getOrderStatusSteps(serviceType: ServiceType = "Album") {
-  return serviceType === "Session" ? SESSION_ORDER_STATUS_STEPS : DEFAULT_ORDER_STATUS_STEPS;
+  if (serviceType === "Session") {
+    return SESSION_ORDER_STATUS_STEPS;
+  }
+
+  if (serviceType === "Koshat") {
+    return KOSHAT_ORDER_STATUS_STEPS;
+  }
+
+  return DEFAULT_ORDER_STATUS_STEPS;
 }
 
 export function normalizeStatusForService(
@@ -226,6 +254,14 @@ export function normalizeStatusForService(
   serviceType: ServiceType = "Album",
 ) {
   if (serviceType !== "Session") {
+    if (serviceType !== "Koshat") {
+      return status;
+    }
+
+    if (status === "المونتاج" || status === "تم التسليم") {
+      return "مكتمل";
+    }
+
     return status;
   }
 
@@ -269,6 +305,7 @@ export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {
     ...rawOrder,
     photographer: typeof rawOrder.photographer === "string" ? rawOrder.photographer : "",
     session_type: normalizeAlbumSessionType(rawOrder.session_type),
+    koshat_type: normalizeKoshatType(rawOrder.koshat_type),
     total_amount: parseAmountValue(rawOrder.total_amount as string | number | null | undefined),
     received_amount: parseAmountValue(rawOrder.received_amount as string | number | null | undefined),
     remaining_amount: parseAmountValue(rawOrder.remaining_amount as string | number | null | undefined),

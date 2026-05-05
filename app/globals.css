@@ -9,10 +9,12 @@
 html {
   background: #050505;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top, rgba(212, 175, 55, 0.18), transparent 34%),
     radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.06), transparent 24%),
@@ -57,6 +59,20 @@ body::before {
   border-radius: 999px;
 }
 
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -69,7 +85,7 @@ textarea:-webkit-autofill:focus {
 
 @layer components {
   .page-shell {
-    @apply relative overflow-hidden;
+    @apply relative overflow-x-clip;
   }
 
   .section-shell {
@@ -109,3 +125,19 @@ textarea:-webkit-autofill:focus {
   }
 }
 
+@media (max-width: 640px) {
+  body::before {
+    background-size: 52px 52px;
+    opacity: 0.28;
+  }
+
+  .section-shell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .surface-panel,
+  .surface-panel-strong {
+    border-radius: 24px;
+  }
+}

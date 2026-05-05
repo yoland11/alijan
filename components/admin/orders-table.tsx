@@ -74,6 +74,9 @@ export function OrdersTable({
                     {order.service_type === "Album" && order.session_type ? (
                       <p className="text-xs text-ajn-muted">نوع الجلسة: {order.session_type}</p>
                     ) : null}
+                    {order.service_type === "Koshat" && order.koshat_type ? (
+                      <p className="text-xs text-ajn-muted">نوع الكوشة: {order.koshat_type}</p>
+                    ) : null}
                   </div>
                 </td>
                 <td className="px-5 py-4">
@@ -133,7 +136,7 @@ export function OrdersTable({
 
       <div className="grid gap-4 xl:hidden">
         {orders.map((order) => (
-          <div key={order.id} className="surface-panel p-5">
+          <div key={order.id} className="surface-panel p-4 sm:p-5">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-bold text-white">{order.name}</h3>
@@ -151,6 +154,9 @@ export function OrdersTable({
               {order.service_type === "Album" && order.session_type ? (
                 <p>نوع الجلسة: {order.session_type}</p>
               ) : null}
+              {order.service_type === "Koshat" && order.koshat_type ? (
+                <p>نوع الكوشة: {order.koshat_type}</p>
+              ) : null}
               <p>الهاتف: {order.phone}</p>
               <p>الحجز: {formatDateOnly(order.booking_date)}</p>
               <p>
@@ -158,7 +164,9 @@ export function OrdersTable({
               </p>
               <p
                 className={
-                  order.photographer || (order.service_type === "Album" && order.session_type)
+                  order.photographer ||
+                  (order.service_type === "Album" && order.session_type) ||
+                  (order.service_type === "Koshat" && order.koshat_type)
                     ? ""
                     : "sm:col-span-2"
                 }
@@ -169,10 +177,10 @@ export function OrdersTable({
             <div className="mt-4">
               <OrderAmountsSummary order={order} card />
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
               <Button
                 variant="secondary"
-                className="min-w-[140px] flex-1 border-[#25D366]/35 bg-[#25D366]/10 text-[#b6f4cf] hover:bg-[#25D366]/16"
+                className="w-full border-[#25D366]/35 bg-[#25D366]/10 text-[#b6f4cf] hover:bg-[#25D366]/16"
                 onClick={() => onTrackingWhatsApp(order)}
               >
                 <MessageCircleMore className="h-4 w-4" />
@@ -181,22 +189,22 @@ export function OrdersTable({
               {order.status === "مكتمل" ? (
                 <Button
                   variant="secondary"
-                  className="min-w-[140px] flex-1 border-ajn-gold/35 bg-ajn-gold/[0.12] text-ajn-goldSoft hover:bg-ajn-gold/[0.18]"
+                  className="w-full border-ajn-gold/35 bg-ajn-gold/[0.12] text-ajn-goldSoft hover:bg-ajn-gold/[0.18]"
                   onClick={() => onCompletionWhatsApp(order)}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   إشعار الاكتمال
                 </Button>
               ) : null}
-              <Button variant="secondary" className="min-w-[140px] flex-1" onClick={() => onPrintInvoice(order)}>
+              <Button variant="secondary" className="w-full" onClick={() => onPrintInvoice(order)}>
                 <Printer className="h-4 w-4" />
                 طباعة / حفظ PDF
               </Button>
-              <Button variant="secondary" className="min-w-[140px] flex-1" onClick={() => onEdit(order)}>
+              <Button variant="secondary" className="w-full" onClick={() => onEdit(order)}>
                 <Pencil className="h-4 w-4" />
                 تعديل
               </Button>
-              <Button variant="danger" className="min-w-[140px] flex-1" onClick={() => onDelete(order)}>
+              <Button variant="danger" className="w-full sm:col-span-2" onClick={() => onDelete(order)}>
                 <Trash2 className="h-4 w-4" />
                 حذف
               </Button>

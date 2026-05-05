@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   ALBUM_SESSION_TYPES,
+  KOSHAT_TYPES,
   PHOTOGRAPHER_OPTIONS,
   SERVICE_TYPE_LABELS,
   SERVICE_TYPES,
@@ -28,6 +29,7 @@ import {
   normalizePhone,
   normalizeStatusForService,
   supportsAlbumSessionType,
+  supportsKoshatType,
   supportsStaffField,
 } from "@/lib/utils";
 import { orderSchema } from "@/lib/validators";
@@ -50,6 +52,7 @@ const defaultValues: OrderFormInput = {
   service_type: "Album",
   photographer: "",
   session_type: "",
+  koshat_type: "",
   booking_date: new Date().toISOString().split("T")[0],
   status: "تم الحجز",
   notes: "",
@@ -76,6 +79,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   const serviceType = useWatch({ control, name: "service_type" }) ?? "Album";
   const photographer = useWatch({ control, name: "photographer" }) ?? "";
   const sessionType = useWatch({ control, name: "session_type" }) ?? "";
+  const koshatType = useWatch({ control, name: "koshat_type" }) ?? "";
   const currentStatus = useWatch({ control, name: "status" }) ?? "تم الحجز";
   const images = useWatch({ control, name: "images" }) ?? [];
   const totalAmountInput = useWatch({ control, name: "total_amount" }) ?? "0";
@@ -84,9 +88,11 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   const availableStatuses = getOrderStatusSteps(serviceType);
   const shouldShowStaffField = supportsStaffField(serviceType);
   const shouldShowAlbumSessionType = supportsAlbumSessionType(serviceType);
+  const shouldShowKoshatType = supportsKoshatType(serviceType);
   const staffFieldLabel = getStaffFieldLabel(serviceType);
   const phoneField = register("phone");
   const sessionTypeField = register("session_type");
+  const koshatTypeField = register("koshat_type");
 
   useEffect(() => {
     if (!open) {
@@ -101,6 +107,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             service_type: order.service_type,
             photographer: order.photographer,
             session_type: order.session_type,
+            koshat_type: order.koshat_type,
             booking_date: order.booking_date,
             status: normalizeStatusForService(order.status, order.service_type),
             notes: order.notes,
@@ -129,7 +136,11 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
       setValue("session_type", "", { shouldDirty: true, shouldValidate: true });
     }
 
-    if (serviceType === "Session") {
+    if (!shouldShowKoshatType && koshatType) {
+      setValue("koshat_type", "", { shouldDirty: true, shouldValidate: true });
+    }
+
+    if (serviceType === "Session" || serviceType === "Koshat") {
       const normalizedStatus = normalizeStatusForService(currentStatus, serviceType);
 
       if (normalizedStatus !== currentStatus) {
@@ -141,8 +152,10 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
     photographer,
     serviceType,
     sessionType,
+    koshatType,
     setValue,
     shouldShowAlbumSessionType,
+    shouldShowKoshatType,
     shouldShowStaffField,
   ]);
 
@@ -250,61 +263,54 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                 <div>
                   <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الجلسة</label>
                   <input type="hidden" {...sessionTypeField} value={sessionType} />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {ALBUM_SESSION_TYPES.map((type) => {
-                      const selected = sessionType === type;
-
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          className={cn(
-                            "group rounded-[24px] border px-4 py-4 text-right transition duration-300",
-                            "hover:-translate-y-0.5 hover:border-ajn-gold/45 hover:bg-white/[0.06]",
-                            "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ajn-gold/20",
-                            selected
-                              ? "border-ajn-gold bg-ajn-gold/[0.12] shadow-[0_12px_30px_rgba(212,175,55,0.14)]"
-                              : "border-ajn-line bg-white/[0.03]",
-                          )}
-                          onClick={() =>
-                            setValue("session_type", type, {
-                              shouldDirty: true,
-                              shouldTouch: true,
-                              shouldValidate: true,
-                            })
-                          }
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p
-                                className={cn(
-                                  "text-base font-semibold transition",
-                                  selected ? "text-ajn-gold" : "text-white",
-                                )}
-                              >
-                                {type}
-                              </p>
-                              <p className="mt-1 text-xs text-ajn-muted">
-                                {type === "داخلي"
-                                  ? "جلسة داخل الاستوديو أو موقع داخلي مجهز"
-                                  : "جلسة خارجية في موقع مفتوح أو خارجي"}
-                              </p>
-                            </div>
-                            <span
-                              className={cn(
-                                "h-4 w-4 rounded-full border transition",
-                                selected
-                                  ? "border-ajn-gold bg-ajn-gold shadow-[0_0_0_4px_rgba(212,175,55,0.15)]"
-                                  : "border-white/20 bg-white/[0.04] group-hover:border-ajn-gold/45",
-                              )}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <ChoiceButtonGroup
+                    options={ALBUM_SESSION_TYPES.map((type) => ({
+                      value: type,
+                      title: type,
+                      description:
+                        type === "داخلي"
+                          ? "جلسة داخل الاستوديو أو موقع داخلي مجهز"
+                          : "جلسة خارجية في موقع مفتوح أو خارجي",
+                    }))}
+                    value={sessionType}
+                    onChange={(value) =>
+                      setValue("session_type", value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  />
                   {errors.session_type ? (
                     <p className="mt-2 text-sm text-red-300">{errors.session_type.message}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {shouldShowKoshatType ? (
+                <div>
+                  <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الكوشة</label>
+                  <input type="hidden" {...koshatTypeField} value={koshatType} />
+                  <ChoiceButtonGroup
+                    options={KOSHAT_TYPES.map((type) => ({
+                      value: type,
+                      title: type,
+                      description:
+                        type === "اعتيادي"
+                          ? "تنفيذ أنيق ومرتب بطابع كلاسيكي هادئ"
+                          : "تنفيذ فاخر بتفاصيل ملكية ولمسات VIP",
+                    }))}
+                    value={koshatType}
+                    onChange={(value) =>
+                      setValue("koshat_type", value, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  />
+                  {errors.koshat_type ? (
+                    <p className="mt-2 text-sm text-red-300">{errors.koshat_type.message}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -461,6 +467,62 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChoiceButtonGroup({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: string; title: string; description: string }[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {options.map((option) => {
+        const selected = value === option.value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={cn(
+              "group rounded-[24px] border px-4 py-4 text-right transition duration-300",
+              "hover:-translate-y-0.5 hover:border-ajn-gold/45 hover:bg-white/[0.06]",
+              "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ajn-gold/20",
+              selected
+                ? "border-ajn-gold bg-ajn-gold/[0.12] shadow-[0_12px_30px_rgba(212,175,55,0.14)]"
+                : "border-ajn-line bg-white/[0.03]",
+            )}
+            onClick={() => onChange(option.value)}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p
+                  className={cn(
+                    "text-base font-semibold transition",
+                    selected ? "text-ajn-gold" : "text-white",
+                  )}
+                >
+                  {option.title}
+                </p>
+                <p className="mt-1 text-xs text-ajn-muted">{option.description}</p>
+              </div>
+              <span
+                className={cn(
+                  "h-4 w-4 rounded-full border transition",
+                  selected
+                    ? "border-ajn-gold bg-ajn-gold shadow-[0_0_0_4px_rgba(212,175,55,0.15)]"
+                    : "border-white/20 bg-white/[0.04] group-hover:border-ajn-gold/45",
+                )}
+              />
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

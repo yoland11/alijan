@@ -1,6 +1,7 @@
 export const SERVICE_TYPES = ["Album", "Session", "Koshat", "Gifts", "Research"] as const;
 
 export const ALBUM_SESSION_TYPES = ["داخلي", "خارجي"] as const;
+export const KOSHAT_TYPES = ["اعتيادي", "ملكي VIP"] as const;
 
 export const PHOTOGRAPHER_OPTIONS = [
   "احمد تحسين",
@@ -96,6 +97,34 @@ export const SESSION_ORDER_STATUS_STEPS = [
     value: "تم التسليم",
     label: "تم التسليم",
     description: "تم تسليم العمل بنجاح، نتمنى أن ينال إعجابك ✨",
+  },
+] as const;
+
+export const KOSHAT_ORDER_STATUS_STEPS = [
+  {
+    value: "تم الحجز",
+    label: "تم الحجز",
+    description: "تم تأكيد حجز الكوشة بنجاح، شكراً لاختياركم خدماتنا 🌸",
+  },
+  {
+    value: "قيد التنفيذ",
+    label: "قيد المتابعة",
+    description: "نقوم بمتابعة تفاصيل الطلب والتأكد من تنفيذه حسب رغبتكم 📋",
+  },
+  {
+    value: "جاري التجهيز",
+    label: "جارِ التجهيز",
+    description: "يتم حالياً تجهيز الكوشة وتحضير كافة التفاصيل المطلوبة 🎀",
+  },
+  {
+    value: "جاري التصوير",
+    label: "جاري التنصيب",
+    description: "فريقنا متواجد في الموقع ويعمل على تنصيب الكوشة بأفضل شكل ✨",
+  },
+  {
+    value: "مكتمل",
+    label: "مكتمل",
+    description: "تم تنفيذ الكوشة بالكامل، نتمنى أن تنال إعجابكم 💐",
   },
 ] as const;
 

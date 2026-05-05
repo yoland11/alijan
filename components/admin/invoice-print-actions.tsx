@@ -75,7 +75,7 @@ export function InvoicePrintActions({
       const renderHeight = imgHeight * ratio;
 
       const x = (pageWidth - renderWidth) / 2;
-      const y = (pageHeight - renderHeight) / 2;
+      const y = margin;
 
       pdf.addImage(
         imageData,
@@ -98,26 +98,26 @@ export function InvoicePrintActions({
   };
 
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
+    <div className="mb-6 flex flex-col gap-3 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       <Link
         href="/admin"
-        className="inline-flex h-12 items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+        className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08] sm:w-auto"
       >
         العودة إلى لوحة الإدارة
       </Link>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid gap-3 sm:flex sm:flex-wrap">
         <Link
           href={`/admin/invoices/${orderId}`}
-          className="inline-flex h-12 items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+          className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08] sm:w-auto"
         >
           عرض الفاتورة
         </Link>
-        <Button onClick={downloadPdf} disabled={downloading}>
+        <Button className="w-full sm:w-auto" onClick={downloadPdf} disabled={downloading}>
           <Download className="h-4 w-4" />
           {downloading ? "جاري تجهيز الملف..." : "تحميل PDF"}
         </Button>
-        <Button variant="secondary" onClick={() => window.print()}>
+        <Button className="w-full sm:w-auto" variant="secondary" onClick={() => window.print()}>
           <Printer className="h-4 w-4" />
           طباعة / حفظ PDF
         </Button>

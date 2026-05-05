@@ -80,6 +80,7 @@ export function DashboardClient() {
         order.order_code,
         order.photographer,
         order.session_type,
+        order.koshat_type,
         order.notes,
         order.total_amount,
         order.received_amount,
@@ -210,22 +211,23 @@ export function DashboardClient() {
 
   return (
     <>
-      <div className="page-shell pb-16 pt-10">
+      <div className="page-shell pb-14 pt-6 sm:pb-16 sm:pt-10">
         <div className="section-shell space-y-8">
-          <header className="surface-panel-strong noise-overlay p-8 sm:p-10">
-            <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <header className="surface-panel-strong noise-overlay p-5 sm:p-10">
+            <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
               <div>
                 <p className="mb-3 font-display text-lg uppercase tracking-[0.35em] text-ajn-goldSoft">
                   AJN Admin Dashboard
                 </p>
-                <h1 className="text-4xl font-bold text-white sm:text-5xl">إدارة الحجوزات والطلبات</h1>
+                <h1 className="text-3xl font-bold text-white sm:text-5xl">إدارة الحجوزات والطلبات</h1>
                 <p className="mt-4 max-w-2xl text-sm leading-8 text-ajn-muted">
                   لوحة تشغيل كاملة لإنشاء الطلبات، تعديلها، رفع الصور، ومتابعة الإنجاز مع تحديثات فورية.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 <Button
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setActiveOrder(null);
                     setModalOpen(true);
@@ -234,7 +236,7 @@ export function DashboardClient() {
                   <Plus className="h-4 w-4" />
                   طلب جديد
                 </Button>
-                <LogoutButton />
+                <LogoutButton className="w-full sm:w-auto" />
               </div>
             </div>
 
@@ -270,13 +272,13 @@ export function DashboardClient() {
             </div>
           </header>
 
-          <section className="surface-panel p-6 sm:p-7">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <section className="surface-panel p-5 sm:p-7">
+            <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div>
                 <p className="mb-2 text-sm text-ajn-goldSoft">أدوات التحكم</p>
                 <h2 className="text-2xl font-bold text-white">بحث وفلاتر سريعة</h2>
               </div>
-              <div className="flex items-center gap-2 rounded-full border border-ajn-line bg-white/[0.03] px-4 py-2 text-sm text-ajn-muted">
+              <div className="flex w-full items-center justify-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.03] px-4 py-2 text-sm text-ajn-muted sm:w-auto sm:rounded-full">
                 <ChartColumnBig className="h-4 w-4 text-ajn-gold" />
                 {ORDER_STATUSES.length} حالات تشغيل + فرز ذكي
               </div>
@@ -390,9 +392,9 @@ function getDashboardFilterLabel(filter: (typeof DASHBOARD_STATUS_FILTERS)[numbe
     case "تم الاكتمال":
       return "تم الاكتمال";
     case "قيد التنفيذ":
-      return "قيد التنفيذ / جاري المتابعة";
+      return "قيد التنفيذ / جاري المتابعة / قيد المتابعة";
     case "جاري التصوير":
-      return "جاري التصوير / أثناء التصوير";
+      return "جاري التصوير / أثناء التصوير / جاري التنصيب";
     case "المونتاج":
       return "المونتاج / قيد المونتاج";
     case "مكتمل":

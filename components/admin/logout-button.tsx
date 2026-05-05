@@ -6,14 +6,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
     <Button
       variant="secondary"
+      className={cn(className)}
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
@@ -33,4 +35,3 @@ export function LogoutButton() {
     </Button>
   );
 }
-

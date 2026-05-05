@@ -21,11 +21,11 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="space-y-6">
-        <div className="surface-panel p-6 sm:p-7">
+        <div className="surface-panel p-5 sm:p-7">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm text-ajn-goldSoft">تفاصيل الطلب</p>
-              <h2 className="text-3xl font-bold text-white">{order.order_code}</h2>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">{order.order_code}</h2>
             </div>
             <StatusBadge status={order.status} serviceType={order.service_type} />
           </div>
@@ -60,12 +60,21 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                   value={order.session_type}
                 />
               ) : null}
+              {order.service_type === "Koshat" && order.koshat_type ? (
+                <InfoCard
+                  icon={<Images className="h-4 w-4" />}
+                  label="نوع الكوشة"
+                  value={order.koshat_type}
+                />
+              ) : null}
               <InfoCard
                 icon={<Clock3 className="h-4 w-4" />}
                 label="آخر تحديث"
                 value={formatDateTime(order.updated_at)}
                 className={
-                  order.photographer || (order.service_type === "Album" && order.session_type)
+                  order.photographer ||
+                  (order.service_type === "Album" && order.session_type) ||
+                  (order.service_type === "Koshat" && order.koshat_type)
                     ? ""
                     : "sm:col-span-2"
                 }
@@ -105,7 +114,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-ajn-gold px-5 text-sm font-semibold text-black transition hover:bg-ajn-goldSoft"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ajn-gold px-5 text-sm font-semibold text-black transition hover:bg-ajn-goldSoft sm:w-auto"
               >
                 <MessageCircleMore className="h-4 w-4" />
                 التواصل عبر واتساب
@@ -114,11 +123,11 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
           </div>
         </div>
 
-        <div className="surface-panel p-6 sm:p-7">
-          <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="surface-panel p-5 sm:p-7">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-sm text-ajn-goldSoft">الوسائط المرفوعة</p>
-              <h3 className="text-2xl font-bold text-white">معاينة الطلب</h3>
+              <h3 className="text-xl font-bold text-white sm:text-2xl">معاينة الطلب</h3>
             </div>
             <span className="rounded-full border border-ajn-line px-3 py-1 text-xs text-ajn-muted">
               {order.images.length} ملف
@@ -166,12 +175,12 @@ function InfoCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-3xl border border-ajn-line bg-white/[0.03] p-5 ${className ?? ""}`}>
+    <div className={`rounded-3xl border border-ajn-line bg-white/[0.03] p-4 sm:p-5 ${className ?? ""}`}>
       <div className="mb-3 flex items-center gap-2 text-sm text-ajn-goldSoft">
         {icon}
         {label}
       </div>
-      <p className="text-base font-semibold text-white">{value}</p>
+      <p className="break-words text-sm font-semibold text-white sm:text-base">{value}</p>
     </div>
   );
 }

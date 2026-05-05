@@ -8,6 +8,7 @@ create table if not exists public.orders (
   service_type text not null check (service_type in ('Album', 'Session', 'Koshat', 'Gifts', 'Research')),
   photographer text not null default ''::text,
   session_type text not null default ''::text,
+  koshat_type text not null default ''::text,
   booking_date date not null,
   status text not null check (
     status in (

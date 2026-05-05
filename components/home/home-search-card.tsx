@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { TrackingSearchForm } from "@/components/tracking/search-form";
+import { CompactTrackingSearchForm } from "@/components/tracking/search-form";
 import { normalizeTrackingQuery } from "@/lib/utils";
 
 export function HomeSearchCard() {
@@ -12,8 +12,7 @@ export function HomeSearchCard() {
   const [query, setQuery] = useState("");
 
   return (
-    <TrackingSearchForm
-      compact
+    <CompactTrackingSearchForm
       query={query}
       onQueryChange={setQuery}
       onSubmit={() => {

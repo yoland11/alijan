@@ -1,8 +1,14 @@
-import { ALBUM_SESSION_TYPES, ORDER_STATUSES, SERVICE_TYPES } from "@/lib/constants";
+import {
+  ALBUM_SESSION_TYPES,
+  KOSHAT_TYPES,
+  ORDER_STATUSES,
+  SERVICE_TYPES,
+} from "@/lib/constants";
 
 export type ServiceType = (typeof SERVICE_TYPES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type AlbumSessionType = (typeof ALBUM_SESSION_TYPES)[number];
+export type KoshatType = (typeof KOSHAT_TYPES)[number];
 
 export interface OrderRecord {
   id: string;
@@ -12,6 +18,7 @@ export interface OrderRecord {
   service_type: ServiceType;
   photographer: string;
   session_type: AlbumSessionType | "";
+  koshat_type: KoshatType | "";
   booking_date: string;
   status: OrderStatus;
   notes: string;
@@ -29,6 +36,7 @@ export interface OrderFormValues {
   service_type: ServiceType;
   photographer: string;
   session_type: AlbumSessionType | "";
+  koshat_type: KoshatType | "";
   booking_date: string;
   status: OrderStatus;
   notes: string;
