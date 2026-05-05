@@ -123,6 +123,87 @@ textarea:-webkit-autofill:focus {
       radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.05) 0, transparent 16%);
     opacity: 0.4;
   }
+
+  .hero-title-frame {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 48rem);
+    border: 1px solid rgba(212, 175, 55, 0.42);
+    border-radius: 22px;
+    padding: 0.9rem 1.1rem;
+    background: transparent;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+      0 0 0 rgba(212, 175, 55, 0);
+    transform-origin: center;
+    will-change: transform, box-shadow, border-color;
+    animation:
+      ajn-frame-float 5.2s ease-in-out infinite,
+      ajn-frame-glow 6.4s ease-in-out infinite;
+  }
+
+  .hero-title-frame::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.16);
+    border-radius: 16px;
+    pointer-events: none;
+  }
+
+  .hero-title-text {
+    font-size: clamp(1.45rem, 2.6vw, 2.2rem);
+    line-height: 1.55;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.1);
+    animation: ajn-title-shimmer 6s ease-in-out infinite;
+  }
+}
+
+@keyframes ajn-frame-glow {
+  0%,
+  100% {
+    transform: translateY(0);
+    border-color: rgba(212, 175, 55, 0.34);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+      0 0 0 rgba(212, 175, 55, 0);
+  }
+
+  50% {
+    transform: translateY(-1px);
+    border-color: rgba(212, 175, 55, 0.54);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+      0 0 24px rgba(212, 175, 55, 0.1);
+  }
+}
+
+@keyframes ajn-frame-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes ajn-title-shimmer {
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.08);
+  }
+
+  50% {
+    text-shadow: 0 0 18px rgba(212, 175, 55, 0.16);
+  }
 }
 
 @media (max-width: 640px) {
@@ -139,5 +220,16 @@ textarea:-webkit-autofill:focus {
   .surface-panel,
   .surface-panel-strong {
     border-radius: 24px;
+  }
+
+  .hero-title-frame {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border-radius: 20px;
+  }
+
+  .hero-title-frame::before {
+    inset: 7px;
+    border-radius: 14px;
   }
 }

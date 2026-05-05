@@ -6,38 +6,34 @@ export default function HomePage() {
     <div className="page-shell pb-24">
       <div className="section-shell space-y-8 pt-5 sm:space-y-10 sm:pt-8">
         <section className="surface-panel-strong noise-overlay overflow-hidden p-5 sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-3xl">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col items-center text-center">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-ajn-line bg-white/[0.04] px-4 py-2 text-xs font-semibold text-ajn-goldSoft">
                 <ShieldCheck className="h-4 w-4" />
                 لوحة الإدارة
               </div>
-              <h1 className="text-3xl font-bold text-white sm:text-4xl">
-                دخول الإدارة وإدارة الطلبات الداخلية
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-8 text-ajn-muted sm:text-base">
-                مساحة خاصة بالإدارة لمتابعة الحجوزات، تحديث الحالات، رفع الصور، إصدار
-                الفواتير، وإدارة الطلبات بشكل كامل ومنظم.
-              </p>
+              <div className="hero-title-frame mx-auto max-w-2xl">
+                <h1 className="hero-title-text">مجموعة علي جان نهاد لتنظيم المناسبات</h1>
+              </div>
             </div>
 
-            <Link
-              href="/admin/login"
-              className="group inline-flex w-full items-center justify-between gap-4 rounded-[28px] border border-ajn-line bg-white/[0.05] px-5 py-4 text-right transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/55 hover:bg-white/[0.08] sm:w-auto sm:min-w-[280px]"
-            >
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ajn-gold/15 text-ajn-gold">
-                  <ShieldCheck className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-base font-semibold text-white">دخول لوحة الإدارة</p>
-                  <p className="mt-1 text-xs text-ajn-muted">
-                    تسجيل دخول آمن لإدارة الحجوزات والطلبات
-                  </p>
+            <div className="flex justify-center lg:justify-end">
+              <Link
+                href="/admin/login"
+                className="group inline-flex w-full items-center justify-between gap-3 rounded-[24px] border border-ajn-line bg-white/[0.05] px-4 py-3.5 text-right transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/55 hover:bg-white/[0.08] sm:w-auto sm:min-w-[250px]"
+              >
+                <div className="flex items-center gap-4">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-ajn-gold/15 text-ajn-gold">
+                    <ShieldCheck className="h-4.5 w-4.5" />
+                  </span>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">دخول للإدارة</p>
+                    <p className="mt-1 text-xs text-ajn-muted">دخول فقط للموظفين</p>
+                  </div>
                 </div>
-              </div>
-              <ArrowLeft className="h-5 w-5 text-ajn-gold transition group-hover:-translate-x-1" />
-            </Link>
+                <ArrowLeft className="h-4.5 w-4.5 text-ajn-gold transition group-hover:-translate-x-1" />
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -47,10 +43,6 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold text-white sm:text-4xl">
               اختر الخدمة المناسبة لك
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-8 text-ajn-muted sm:text-base">
-              يمكنك إرسال طلب جديد مباشرة إلى الإدارة أو متابعة حالة طلبك الحالي بسهولة
-              من خلال صفحة مخصصة وواضحة.
-            </p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
