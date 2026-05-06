@@ -36,6 +36,7 @@ export async function createOrder(input: OrderSchema) {
       ...input,
       notes: input.notes ?? "",
       images: input.images ?? [],
+      research_files: input.research_files ?? [],
       order_code: buildOrderCode(input.phone),
     })
     .select("*")
@@ -56,6 +57,7 @@ export async function updateOrder(id: string, input: OrderSchema) {
       ...input,
       notes: input.notes ?? "",
       images: input.images ?? [],
+      research_files: input.research_files ?? [],
       order_code: buildOrderCode(input.phone),
     })
     .eq("id", id)

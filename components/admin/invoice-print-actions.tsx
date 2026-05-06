@@ -103,7 +103,7 @@ export function InvoicePrintActions({
         href="/admin"
         className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08] sm:w-auto"
       >
-        العودة إلى لوحة الإدارة
+        رجوع للإدارة
       </Link>
 
       <div className="grid gap-3 sm:flex sm:flex-wrap">
@@ -111,7 +111,7 @@ export function InvoicePrintActions({
           href={`/admin/invoices/${orderId}`}
           className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08] sm:w-auto"
         >
-          عرض الفاتورة
+          عرض
         </Link>
         <Button className="w-full sm:w-auto" onClick={downloadPdf} disabled={downloading}>
           <Download className="h-4 w-4" />

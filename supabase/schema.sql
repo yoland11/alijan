@@ -5,10 +5,13 @@ create table if not exists public.orders (
   order_code text not null,
   name text not null,
   phone text not null,
-  service_type text not null check (service_type in ('Album', 'Session', 'Koshat', 'Gifts', 'Research')),
+  service_type text not null check (service_type in ('Album', 'Session', 'Koshat', 'Gifts', 'Research', 'Graduation')),
   photographer text not null default ''::text,
   session_type text not null default ''::text,
   koshat_type text not null default ''::text,
+  research_details jsonb not null default '{"title":"","student_names":"","supervisor_name":"","academic_entity":"","delivery_date":"","print_enabled":false,"copy_count":0,"binding_type":""}'::jsonb,
+  research_files jsonb not null default '[]'::jsonb,
+  graduation_details jsonb not null default '{"package_type":"","sash_type":"","robe_type":"","writing_type":"","measurements":{"sash_length":"","shoulder":"","robe_length":"","hand":""},"has_cap":false}'::jsonb,
   booking_date date not null,
   status text not null check (
     status in (

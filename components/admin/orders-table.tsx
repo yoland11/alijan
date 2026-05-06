@@ -8,6 +8,8 @@ import {
   formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
+  getResearchCopyLabel,
+  getResearchIncludedNotes,
   getStaffFieldLabel,
   getOrderStatusLabel,
 } from "@/lib/utils";
@@ -32,7 +34,7 @@ export function OrdersTable({
   if (!orders.length) {
     return (
       <div className="surface-panel p-10 text-center text-sm leading-8 text-ajn-muted">
-        لا توجد طلبات مطابقة للفلاتر الحالية. يمكنك إنشاء أول طلب من الزر العلوي.
+        لا توجد طلبات.
       </div>
     );
   }
@@ -66,17 +68,7 @@ export function OrdersTable({
                 <td className="px-5 py-4 text-sm text-ajn-ivory">
                   <div className="space-y-1">
                     <p>{SERVICE_TYPE_LABELS[order.service_type]}</p>
-                    {order.photographer ? (
-                      <p className="text-xs text-ajn-muted">
-                        {getStaffFieldLabel(order.service_type)}: {order.photographer}
-                      </p>
-                    ) : null}
-                    {order.service_type === "Album" && order.session_type ? (
-                      <p className="text-xs text-ajn-muted">نوع الجلسة: {order.session_type}</p>
-                    ) : null}
-                    {order.service_type === "Koshat" && order.koshat_type ? (
-                      <p className="text-xs text-ajn-muted">نوع الكوشة: {order.koshat_type}</p>
-                    ) : null}
+                    <ServiceMetaDetails order={order} />
                   </div>
                 </td>
                 <td className="px-5 py-4">
@@ -146,17 +138,7 @@ export function OrdersTable({
             </div>
             <div className="grid gap-2 text-sm text-ajn-muted sm:grid-cols-2">
               <p>الخدمة: {SERVICE_TYPE_LABELS[order.service_type]}</p>
-              {order.photographer ? (
-                <p>
-                  {getStaffFieldLabel(order.service_type)}: {order.photographer}
-                </p>
-              ) : null}
-              {order.service_type === "Album" && order.session_type ? (
-                <p>نوع الجلسة: {order.session_type}</p>
-              ) : null}
-              {order.service_type === "Koshat" && order.koshat_type ? (
-                <p>نوع الكوشة: {order.koshat_type}</p>
-              ) : null}
+              <ServiceMetaDetails order={order} mobile />
               <p>الهاتف: {order.phone}</p>
               <p>الحجز: {formatDateOnly(order.booking_date)}</p>
               <p>
@@ -212,6 +194,72 @@ export function OrdersTable({
           </div>
         ))}
       </div>
+    </>
+  );
+}
+
+function ServiceMetaDetails({ order, mobile = false }: { order: OrderRecord; mobile?: boolean }) {
+  const notes = getResearchIncludedNotes();
+  const lines: string[] = [];
+
+  if (order.photographer) {
+    lines.push(`${getStaffFieldLabel(order.service_type)}: ${order.photographer}`);
+  }
+
+  if (order.service_type === "Album" && order.session_type) {
+    lines.push(`نوع الجلسة: ${order.session_type}`);
+  }
+
+  if (order.service_type === "Koshat" && order.koshat_type) {
+    lines.push(`نوع الكوشة: ${order.koshat_type}`);
+  }
+
+  if (order.service_type === "Research") {
+    if (order.research_details.title) {
+      lines.push(`العنوان: ${order.research_details.title}`);
+    }
+
+    lines.push(
+      `النسخ: ${getResearchCopyLabel(order.research_details.copy_count)}${
+        order.research_details.binding_type ? ` - ${order.research_details.binding_type}` : ""
+      }`,
+    );
+
+    lines.push(`المزايا: ${notes.join(" + ")}`);
+  }
+
+  if (order.service_type === "Graduation") {
+    if (order.graduation_details.package_type) {
+      lines.push(`نوع التجهيز: ${order.graduation_details.package_type}`);
+    }
+
+    if (order.graduation_details.sash_type || order.graduation_details.robe_type) {
+      lines.push(
+        `الوشاح / الروب: ${order.graduation_details.sash_type || "-"} / ${
+          order.graduation_details.robe_type || "-"
+        }`,
+      );
+    }
+
+    if (order.graduation_details.writing_type) {
+      lines.push(`الكتابة: ${order.graduation_details.writing_type}`);
+    }
+
+    if (order.graduation_details.has_cap) {
+      lines.push("القبعة: مضافة");
+    }
+  }
+
+  return (
+    <>
+      {lines.map((line) => (
+        <p
+          key={line}
+          className={mobile ? "sm:col-span-2" : "text-xs text-ajn-muted"}
+        >
+          {line}
+        </p>
+      ))}
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAdminSession } from "@/lib/auth";
-import { getStorageBucket, createServiceSupabaseClient } from "@/lib/supabase/server";
+import { uploadFilesToStorage } from "@/lib/server/storage";
 
 export async function POST(request: Request) {
   const session = await getAdminSession();
@@ -11,6 +11,8 @@ export async function POST(request: Request) {
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const uploadKind = searchParams.get("kind");
     const formData = await request.formData();
     const files = formData
       .getAll("files")
@@ -20,32 +22,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "لم يتم اختيار أي ملفات." }, { status: 400 });
     }
 
-    const supabase = createServiceSupabaseClient();
-    const bucket = getStorageBucket();
+    const uploadedFiles = await uploadFilesToStorage(files, {
+      prefix: uploadKind === "research-pdf" ? "research-pdfs" : "order-images",
+      allowedMimeTypes:
+        uploadKind === "research-pdf" ? ["application/pdf"] : undefined,
+      allowedExtensions: uploadKind === "research-pdf" ? ["pdf"] : undefined,
+      maxSizeInMb: uploadKind === "research-pdf" ? 20 : 15,
+    });
 
-    const urls = await Promise.all(
-      files.map(async (file) => {
-        const extension = file.name.split(".").pop() || "bin";
-        const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-        const arrayBuffer = await file.arrayBuffer();
-
-        const { error } = await supabase.storage
-          .from(bucket)
-          .upload(fileName, arrayBuffer, {
-            contentType: file.type,
-            upsert: false,
-          });
-
-        if (error) {
-          throw new Error(error.message);
-        }
-
-        const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-        return data.publicUrl;
-      }),
-    );
-
-    return NextResponse.json({ urls });
+    return NextResponse.json({
+      urls: uploadedFiles.map((file) => file.url),
+      files: uploadedFiles.map(({ name, url }) => ({ name, url })),
+    });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر رفع الملفات." },
@@ -53,4 +41,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

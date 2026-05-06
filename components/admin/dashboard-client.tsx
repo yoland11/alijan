@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChartColumnBig, Filter, Plus, Search } from "lucide-react";
+import { Filter, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { LogoutButton } from "@/components/admin/logout-button";
@@ -10,10 +10,14 @@ import { OrdersTable } from "@/components/admin/orders-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { COMPLETED_STATUSES, DASHBOARD_STATUS_FILTERS, ORDER_STATUSES } from "@/lib/constants";
+import { COMPLETED_STATUSES, DASHBOARD_STATUS_FILTERS } from "@/lib/constants";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { OrderRecord } from "@/lib/types";
-import { buildCompletedOrderWhatsAppUrl, buildCustomerOrderWhatsAppUrl } from "@/lib/utils";
+import {
+  buildCompletedOrderWhatsAppUrl,
+  buildCustomerOrderWhatsAppUrl,
+  getOrderSearchableText,
+} from "@/lib/utils";
 import type { OrderSchema } from "@/lib/validators";
 
 export function DashboardClient() {
@@ -74,21 +78,7 @@ export function DashboardClient() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       !searchTerm ||
-      [
-        order.name,
-        order.phone,
-        order.order_code,
-        order.photographer,
-        order.session_type,
-        order.koshat_type,
-        order.notes,
-        order.total_amount,
-        order.received_amount,
-        order.remaining_amount,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      getOrderSearchableText(order).includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "الكل"
         ? true
@@ -106,15 +96,19 @@ export function DashboardClient() {
   const completedOrders = orders.filter((order) => order.status === "مكتمل").length;
   const deliveredOrders = orders.filter((order) => order.status === "تم التسليم").length;
 
-  const submitOrder = async (values: OrderSchema, files: File[]) => {
+  const submitOrder = async (
+    values: OrderSchema,
+    uploads: { imageFiles: File[]; researchFiles: File[] },
+  ) => {
     setBusy(true);
 
     try {
       let imageUrls = values.images;
+      let researchFiles = values.research_files;
 
-      if (files.length) {
+      if (uploads.imageFiles.length) {
         const uploadBody = new FormData();
-        files.forEach((file) => uploadBody.append("files", file));
+        uploads.imageFiles.forEach((file) => uploadBody.append("files", file));
 
         const uploadResponse = await fetch("/api/admin/media", {
           method: "POST",
@@ -129,6 +123,26 @@ export function DashboardClient() {
         imageUrls = [...values.images, ...(uploadPayload.urls ?? [])];
       }
 
+      if (uploads.researchFiles.length) {
+        const uploadBody = new FormData();
+        uploads.researchFiles.forEach((file) => uploadBody.append("files", file));
+
+        const uploadResponse = await fetch("/api/admin/media?kind=research-pdf", {
+          method: "POST",
+          body: uploadBody,
+        });
+        const uploadPayload = (await uploadResponse.json()) as {
+          message?: string;
+          files?: { name: string; url: string }[];
+        };
+
+        if (!uploadResponse.ok) {
+          throw new Error(uploadPayload.message || "تعذر رفع ملفات PDF.");
+        }
+
+        researchFiles = [...values.research_files, ...(uploadPayload.files ?? [])];
+      }
+
       const endpoint = activeOrder ? `/api/admin/orders/${activeOrder.id}` : "/api/admin/orders";
       const method = activeOrder ? "PUT" : "POST";
       const response = await fetch(endpoint, {
@@ -139,6 +153,7 @@ export function DashboardClient() {
         body: JSON.stringify({
           ...values,
           images: imageUrls,
+          research_files: researchFiles,
         }),
       });
       const payload = (await response.json()) as { message?: string };
@@ -216,13 +231,7 @@ export function DashboardClient() {
           <header className="surface-panel-strong noise-overlay p-5 sm:p-10">
             <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
               <div>
-                <p className="mb-3 font-display text-lg uppercase tracking-[0.35em] text-ajn-goldSoft">
-                  AJN Admin Dashboard
-                </p>
                 <h1 className="text-3xl font-bold text-white sm:text-5xl">إدارة الحجوزات والطلبات</h1>
-                <p className="mt-4 max-w-2xl text-sm leading-8 text-ajn-muted">
-                  لوحة تشغيل كاملة لإنشاء الطلبات، تعديلها، رفع الصور، ومتابعة الإنجاز مع تحديثات فورية.
-                </p>
               </div>
 
               <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -244,28 +253,24 @@ export function DashboardClient() {
               <MetricCard
                 title="إجمالي الطلبات"
                 value={orders.length}
-                subtitle="جميع الطلبات المسجلة"
                 active={statusFilter === "الكل"}
                 onClick={() => setStatusFilter("الكل")}
               />
               <MetricCard
                 title="الطلبات النشطة"
                 value={activeOrders}
-                subtitle="الطلبات قيد التنفيذ"
                 active={statusFilter === "الطلبات النشطة"}
                 onClick={() => setStatusFilter("الطلبات النشطة")}
               />
               <MetricCard
                 title="تم الاكتمال"
                 value={completedOrders}
-                subtitle="طلبات جاهزة للتسليم"
                 active={statusFilter === "تم الاكتمال"}
                 onClick={() => setStatusFilter("تم الاكتمال")}
               />
               <MetricCard
                 title="تم التسليم"
                 value={deliveredOrders}
-                subtitle="طلبات تم تسليمها"
                 active={statusFilter === "تم التسليم"}
                 onClick={() => setStatusFilter("تم التسليم")}
               />
@@ -275,12 +280,7 @@ export function DashboardClient() {
           <section className="surface-panel p-5 sm:p-7">
             <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div>
-                <p className="mb-2 text-sm text-ajn-goldSoft">أدوات التحكم</p>
-                <h2 className="text-2xl font-bold text-white">بحث وفلاتر سريعة</h2>
-              </div>
-              <div className="flex w-full items-center justify-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.03] px-4 py-2 text-sm text-ajn-muted sm:w-auto sm:rounded-full">
-                <ChartColumnBig className="h-4 w-4 text-ajn-gold" />
-                {ORDER_STATUSES.length} حالات تشغيل + فرز ذكي
+                <h2 className="text-2xl font-bold text-white">بحث</h2>
               </div>
             </div>
 
@@ -290,7 +290,7 @@ export function DashboardClient() {
                 <Input
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="ابحث بالاسم أو الهاتف أو الكود أو الملاحظات أو الكادر أو نوع الجلسة"
+                  placeholder="بحث"
                   className="pr-11"
                 />
               </div>
@@ -353,13 +353,11 @@ export function DashboardClient() {
 function MetricCard({
   title,
   value,
-  subtitle,
   active = false,
   onClick,
 }: {
   title: string;
   value: number;
-  subtitle: string;
   active?: boolean;
   onClick?: () => void;
 }) {
@@ -376,11 +374,7 @@ function MetricCard({
       <p className="mb-3 text-sm text-ajn-goldSoft">{title}</p>
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="text-4xl font-bold text-white">{value}</span>
-        <span className="rounded-full border border-ajn-line px-3 py-1 text-xs text-ajn-goldSoft">
-          مباشر
-        </span>
       </div>
-      <p className="text-sm text-ajn-muted">{subtitle}</p>
     </button>
   );
 }

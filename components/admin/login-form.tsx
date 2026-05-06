@@ -62,14 +62,8 @@ export function LoginForm() {
           <ShieldCheck className="h-8 w-8" />
         </div>
         <div>
-          <p className="mb-2 font-display text-lg uppercase tracking-[0.35em] text-ajn-goldSoft">
-            AJN Admin
-          </p>
-          <h1 className="text-3xl font-bold text-white">دخول لوحة الإدارة</h1>
+          <h1 className="text-3xl font-bold text-white">دخول الإدارة</h1>
         </div>
-        <p className="text-sm leading-7 text-ajn-muted">
-          صفحة محمية لإدارة الطلبات، تحديث الحالات، ورفع الوسائط الخاصة بالعملاء.
-        </p>
       </div>
 
       <form className="space-y-5" onSubmit={onSubmit}>
@@ -91,4 +85,3 @@ export function LoginForm() {
     </div>
   );
 }
-

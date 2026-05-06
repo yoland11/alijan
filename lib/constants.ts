@@ -1,7 +1,24 @@
-export const SERVICE_TYPES = ["Album", "Session", "Koshat", "Gifts", "Research"] as const;
+export const SERVICE_TYPES = [
+  "Album",
+  "Session",
+  "Koshat",
+  "Gifts",
+  "Research",
+  "Graduation",
+] as const;
 
 export const ALBUM_SESSION_TYPES = ["داخلي", "خارجي"] as const;
 export const KOSHAT_TYPES = ["اعتيادي", "ملكي VIP"] as const;
+export const RESEARCH_BINDING_TYPES = ["تجليد", "تغليف"] as const;
+export const RESEARCH_COPY_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
+export const RESEARCH_INCLUDED_NOTES = [
+  "طباعة نسخة من النموذج ضمن الحساب",
+  "قرص CD هدية 🎁",
+] as const;
+export const GRADUATION_PACKAGE_TYPES = ["الاعتيادي", "الملكي", "الأمريكي"] as const;
+export const GRADUATION_SASH_TYPES = ["عادي", "ملكي", "امريكي"] as const;
+export const GRADUATION_ROBE_TYPES = ["عادي", "انكليزي"] as const;
+export const GRADUATION_WRITING_TYPES = ["طبع", "تطريز"] as const;
 
 export const PHOTOGRAPHER_OPTIONS = [
   "احمد تحسين",
@@ -17,6 +34,7 @@ export const SERVICE_TYPE_LABELS: Record<(typeof SERVICE_TYPES)[number], string>
   Koshat: "كوشات",
   Gifts: "هدايا",
   Research: "بحوث",
+  Graduation: "تجهيزات تخرج",
 };
 
 export const ORDER_STATUSES = [

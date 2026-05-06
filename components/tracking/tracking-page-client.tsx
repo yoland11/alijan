@@ -152,14 +152,7 @@ export function TrackingPageClient() {
         <header className="surface-panel-strong noise-overlay p-5 sm:p-10">
           <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="mb-3 font-display text-lg uppercase tracking-[0.35em] text-ajn-goldSoft">
-                AJN Tracking
-              </p>
-              <h1 className="text-3xl font-bold text-white sm:text-5xl">تابع طلبك بكل وضوح</h1>
-            </div>
-
-            <div className="w-full rounded-2xl border border-ajn-line bg-white/[0.03] px-4 py-2 text-center text-sm text-ajn-muted sm:w-auto sm:rounded-full">
-              تحديثات فورية + عرض وسائط
+              <h1 className="text-3xl font-bold text-white sm:text-5xl">تتبع الطلب</h1>
             </div>
           </div>
 
@@ -170,7 +163,7 @@ export function TrackingPageClient() {
           <section className="surface-panel p-5 sm:p-7">
             <div className="mb-5 flex items-center gap-2 text-ajn-gold">
               <CheckCircle2 className="h-5 w-5" />
-              <span className="text-sm font-semibold">تم العثور على أكثر من طلب مطابق</span>
+              <span className="text-sm font-semibold">اختر الطلب</span>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -207,10 +200,7 @@ export function TrackingPageClient() {
               <SearchX className="h-8 w-8" />
             </div>
             <h2 className="mb-3 text-2xl font-bold text-white">لا يوجد طلب مطابق</h2>
-            <p className="mx-auto max-w-xl leading-8 text-ajn-muted">
-              تأكد من كتابة الكود بصيغة <span className="text-white">AJN-1234</span> أو آخر 4 أرقام من الهاتف
-              المسجل في الطلب.
-            </p>
+            <p className="mx-auto max-w-xl text-ajn-muted">تحقق من الكود أو رقم الهاتف.</p>
           </section>
         ) : null}
       </div>

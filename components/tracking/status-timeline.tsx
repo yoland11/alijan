@@ -16,8 +16,7 @@ export function StatusTimeline({
   return (
     <div className="surface-panel p-6 sm:p-7">
       <div className="mb-6">
-        <p className="mb-2 text-sm text-ajn-goldSoft">خط سير الطلب</p>
-        <h3 className="text-2xl font-bold text-white">الجدول الزمني للحالة</h3>
+        <h3 className="text-2xl font-bold text-white">الحالة</h3>
       </div>
 
       <div className="relative space-y-6 before:absolute before:right-[18px] before:top-4 before:h-[calc(100%-2rem)] before:w-px before:bg-white/10">

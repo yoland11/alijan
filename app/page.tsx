@@ -39,10 +39,7 @@ export default function HomePage() {
 
         <section className="mx-auto max-w-5xl py-2 sm:py-6">
           <div className="mb-6 text-center sm:mb-8">
-            <p className="mb-2 text-sm font-medium text-ajn-goldSoft">خدمات الزبون</p>
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              اختر الخدمة المناسبة لك
-            </h2>
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">الخدمات</h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -57,9 +54,6 @@ export default function HomePage() {
                     <ClipboardPlus className="h-6 w-6" />
                   </span>
                   <h3 className="text-2xl font-bold text-white">إنشاء طلب</h3>
-                  <p className="mt-3 text-sm leading-8 text-ajn-muted sm:text-base">
-                    احجز خدمتك بسهولة وأرسل تفاصيل طلبك مباشرة للإدارة.
-                  </p>
                 </div>
 
                 <div className="inline-flex items-center gap-3 text-sm font-semibold text-ajn-gold">
@@ -82,9 +76,6 @@ export default function HomePage() {
                     <Search className="h-6 w-6" />
                   </span>
                   <h3 className="text-2xl font-bold text-white">تتبع الطلب</h3>
-                  <p className="mt-3 text-sm leading-8 text-ajn-muted sm:text-base">
-                    أدخل رقم الطلب أو رقم الهاتف لمعرفة حالة طلبك.
-                  </p>
                 </div>
 
                 <div className="inline-flex items-center gap-3 text-sm font-semibold text-white">

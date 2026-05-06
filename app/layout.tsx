@@ -17,7 +17,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "AJN Booking & Order Tracking",
-  description: "نظام AJN لإدارة الحجوزات وتتبع الطلبات بواجهة عربية فاخرة.",
+  description: "إدارة الحجوزات وتتبع الطلبات.",
 };
 
 export default function RootLayout({
@@ -44,4 +44,3 @@ export default function RootLayout({
     </html>
   );
 }
-

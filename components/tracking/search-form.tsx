@@ -64,22 +64,15 @@ function TrackingSearchFormLayout({
         <div className="space-y-3">
           {!compact ? (
             <div>
-              <p className="mb-2 text-sm text-ajn-goldSoft">تتبع ذكي وسريع</p>
-              <h3 className="text-xl font-bold text-white sm:text-2xl">
-                أدخل كود الطلب أو آخر 4 أرقام
-              </h3>
+              <h3 className="text-xl font-bold text-white sm:text-2xl">تتبع الطلب</h3>
             </div>
           ) : null}
 
           <Input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="مثال: AJN-1234 أو 1234"
+            placeholder="رقم الطلب أو الهاتف"
           />
-
-          <p className="text-sm leading-7 text-ajn-muted">
-            يمكنك البحث باستخدام الكود الكامل أو آخر 4 أرقام من رقم الهاتف المسجل.
-          </p>
         </div>
 
         <div className="flex items-end">

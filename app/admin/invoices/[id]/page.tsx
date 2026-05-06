@@ -114,9 +114,6 @@ function InvoiceCopy({
           <h1 className="text-xl font-extrabold text-black sm:text-[1.4rem] print:text-[13.5px]">
             مجموعة علي جان نهاد لتنظيم المناسبات
           </h1>
-          <p className="mt-1 text-[12px] font-medium text-black/70 print:text-[8.5px]">
-            فاتورة طلب جاهزة للطباعة والحفظ
-          </p>
         </div>
 
         <div className="w-full rounded-[18px] border border-black/10 bg-[#faf7eb] px-4 py-3 text-right sm:max-w-[180px] print:max-w-[42mm] print:rounded-[10px] print:px-[2.4mm] print:py-[1.8mm]">

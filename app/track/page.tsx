@@ -7,7 +7,7 @@ export default function TrackPage() {
     <Suspense
       fallback={
         <div className="page-shell">
-          <div className="section-shell py-24 text-center text-ajn-muted">جاري تحميل صفحة التتبع...</div>
+          <div className="section-shell py-24 text-center text-ajn-muted">جاري التحميل...</div>
         </div>
       }
     >
@@ -15,4 +15,3 @@ export default function TrackPage() {
     </Suspense>
   );
 }
-

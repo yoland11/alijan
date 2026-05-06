@@ -3,15 +3,30 @@ import clsx, { type ClassValue } from "clsx";
 import {
   ALBUM_SESSION_TYPES,
   DEFAULT_ORDER_STATUS_STEPS,
+  GRADUATION_PACKAGE_TYPES,
+  GRADUATION_ROBE_TYPES,
+  GRADUATION_SASH_TYPES,
+  GRADUATION_WRITING_TYPES,
   KOSHAT_ORDER_STATUS_STEPS,
   KOSHAT_TYPES,
+  RESEARCH_BINDING_TYPES,
+  RESEARCH_INCLUDED_NOTES,
   SESSION_ORDER_STATUS_STEPS,
 } from "@/lib/constants";
 import type {
   AlbumSessionType,
+  GraduationDetails,
+  GraduationMeasurements,
+  GraduationPackageType,
+  GraduationRobeType,
+  GraduationSashType,
+  GraduationWritingType,
   KoshatType,
   OrderRecord,
   OrderStatus,
+  ResearchBindingType,
+  ResearchDetails,
+  ResearchFileRecord,
   ServiceType,
 } from "@/lib/types";
 
@@ -50,6 +65,22 @@ export function normalizePhone(phone: string) {
   return normalizeArabicDigits(phone).replace(/\D/g, "");
 }
 
+function normalizeBoolean(value: unknown) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return ["true", "1", "yes", "on"].includes(value.toLowerCase());
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  return false;
+}
+
 export function supportsStaffField(serviceType: ServiceType = "Album") {
   return serviceType === "Album" || serviceType === "Session";
 }
@@ -60,6 +91,14 @@ export function supportsAlbumSessionType(serviceType: ServiceType = "Album") {
 
 export function supportsKoshatType(serviceType: ServiceType = "Album") {
   return serviceType === "Koshat";
+}
+
+export function supportsResearchDetails(serviceType: ServiceType = "Album") {
+  return serviceType === "Research";
+}
+
+export function supportsGraduationDetails(serviceType: ServiceType = "Album") {
+  return serviceType === "Graduation";
 }
 
 export function getStaffFieldLabel(serviceType: ServiceType = "Album") {
@@ -82,6 +121,93 @@ export function normalizeKoshatType(value: unknown): KoshatType | "" {
   }
 
   return KOSHAT_TYPES.includes(value as KoshatType) ? (value as KoshatType) : "";
+}
+
+export function normalizeResearchBindingType(value: unknown): ResearchBindingType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return RESEARCH_BINDING_TYPES.includes(value as ResearchBindingType)
+    ? (value as ResearchBindingType)
+    : "";
+}
+
+export function normalizeGraduationPackageType(value: unknown): GraduationPackageType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return GRADUATION_PACKAGE_TYPES.includes(value as GraduationPackageType)
+    ? (value as GraduationPackageType)
+    : "";
+}
+
+export function normalizeGraduationSashType(value: unknown): GraduationSashType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return GRADUATION_SASH_TYPES.includes(value as GraduationSashType)
+    ? (value as GraduationSashType)
+    : "";
+}
+
+export function normalizeGraduationRobeType(value: unknown): GraduationRobeType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return GRADUATION_ROBE_TYPES.includes(value as GraduationRobeType)
+    ? (value as GraduationRobeType)
+    : "";
+}
+
+export function normalizeGraduationWritingType(value: unknown): GraduationWritingType | "" {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return GRADUATION_WRITING_TYPES.includes(value as GraduationWritingType)
+    ? (value as GraduationWritingType)
+    : "";
+}
+
+export function createEmptyResearchDetails(): ResearchDetails {
+  return {
+    title: "",
+    student_names: "",
+    supervisor_name: "",
+    academic_entity: "",
+    delivery_date: "",
+    print_enabled: false,
+    copy_count: 0,
+    binding_type: "",
+  };
+}
+
+export function createEmptyGraduationMeasurements(): GraduationMeasurements {
+  return {
+    sash_length: "",
+    shoulder: "",
+    robe_length: "",
+    hand: "",
+  };
+}
+
+export function createEmptyGraduationDetails(): GraduationDetails {
+  return {
+    package_type: "",
+    sash_type: "",
+    robe_type: "",
+    writing_type: "",
+    measurements: createEmptyGraduationMeasurements(),
+    has_cap: false,
+  };
+}
+
+export function getResearchIncludedNotes() {
+  return [...RESEARCH_INCLUDED_NOTES];
 }
 
 export function parseAmountValue(value: string | number | null | undefined) {
@@ -237,6 +363,92 @@ export function normalizeTrackingQuery(query: string) {
   return "";
 }
 
+function normalizeTextField(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeCopyCount(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.max(0, Math.min(6, Math.trunc(value))) : 0;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(normalizeArabicDigits(value).replace(/[^\d-]/g, ""), 10);
+    return Number.isFinite(parsed) ? Math.max(0, Math.min(6, parsed)) : 0;
+  }
+
+  return 0;
+}
+
+export function normalizeResearchFileRecords(value: unknown): ResearchFileRecord[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const raw = item as Record<string, unknown>;
+      const name = normalizeTextField(raw.name);
+      const url = normalizeTextField(raw.url);
+
+      if (!name || !url) {
+        return null;
+      }
+
+      return { name, url };
+    })
+    .filter((item): item is ResearchFileRecord => Boolean(item));
+}
+
+export function normalizeResearchDetails(value: unknown): ResearchDetails {
+  if (!value || typeof value !== "object") {
+    return createEmptyResearchDetails();
+  }
+
+  const raw = value as Record<string, unknown>;
+
+  return {
+    title: normalizeTextField(raw.title),
+    student_names: normalizeTextField(raw.student_names),
+    supervisor_name: normalizeTextField(raw.supervisor_name),
+    academic_entity: normalizeTextField(raw.academic_entity),
+    delivery_date: normalizeTextField(raw.delivery_date),
+    print_enabled: normalizeBoolean(raw.print_enabled),
+    copy_count: normalizeCopyCount(raw.copy_count),
+    binding_type: normalizeResearchBindingType(raw.binding_type),
+  };
+}
+
+export function normalizeGraduationDetails(value: unknown): GraduationDetails {
+  if (!value || typeof value !== "object") {
+    return createEmptyGraduationDetails();
+  }
+
+  const raw = value as Record<string, unknown>;
+  const measurements =
+    raw.measurements && typeof raw.measurements === "object"
+      ? (raw.measurements as Record<string, unknown>)
+      : {};
+
+  return {
+    package_type: normalizeGraduationPackageType(raw.package_type),
+    sash_type: normalizeGraduationSashType(raw.sash_type),
+    robe_type: normalizeGraduationRobeType(raw.robe_type),
+    writing_type: normalizeGraduationWritingType(raw.writing_type),
+    measurements: {
+      sash_length: normalizeTextField(measurements.sash_length),
+      shoulder: normalizeTextField(measurements.shoulder),
+      robe_length: normalizeTextField(measurements.robe_length),
+      hand: normalizeTextField(measurements.hand),
+    },
+    has_cap: normalizeBoolean(raw.has_cap),
+  };
+}
+
 export function getOrderStatusSteps(serviceType: ServiceType = "Album") {
   if (serviceType === "Session") {
     return SESSION_ORDER_STATUS_STEPS;
@@ -306,10 +518,54 @@ export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {
     photographer: typeof rawOrder.photographer === "string" ? rawOrder.photographer : "",
     session_type: normalizeAlbumSessionType(rawOrder.session_type),
     koshat_type: normalizeKoshatType(rawOrder.koshat_type),
+    research_details: normalizeResearchDetails(rawOrder.research_details),
+    research_files: normalizeResearchFileRecords(rawOrder.research_files),
+    graduation_details: normalizeGraduationDetails(rawOrder.graduation_details),
     total_amount: parseAmountValue(rawOrder.total_amount as string | number | null | undefined),
     received_amount: parseAmountValue(rawOrder.received_amount as string | number | null | undefined),
     remaining_amount: parseAmountValue(rawOrder.remaining_amount as string | number | null | undefined),
   } as OrderRecord;
+}
+
+export function getResearchCopyLabel(count: number) {
+  if (count <= 0) {
+    return "بدون طبع";
+  }
+
+  return count === 1 ? "نسخة 1" : `${count} نسخ`;
+}
+
+export function getOrderSearchableText(order: OrderRecord) {
+  return [
+    order.name,
+    order.phone,
+    order.order_code,
+    order.photographer,
+    order.session_type,
+    order.koshat_type,
+    order.notes,
+    order.total_amount,
+    order.received_amount,
+    order.remaining_amount,
+    order.research_details.title,
+    order.research_details.student_names,
+    order.research_details.supervisor_name,
+    order.research_details.academic_entity,
+    order.research_details.binding_type,
+    order.research_details.copy_count,
+    ...order.research_files.map((file) => file.name),
+    order.graduation_details.package_type,
+    order.graduation_details.sash_type,
+    order.graduation_details.robe_type,
+    order.graduation_details.writing_type,
+    order.graduation_details.measurements.sash_length,
+    order.graduation_details.measurements.shoulder,
+    order.graduation_details.measurements.robe_length,
+    order.graduation_details.measurements.hand,
+    order.graduation_details.has_cap ? "قبعة" : "",
+  ]
+    .join(" ")
+    .toLowerCase();
 }
 
 export function buildWhatsAppUrl(order: OrderRecord) {
