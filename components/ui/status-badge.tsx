@@ -15,6 +15,17 @@ const toneMap: Record<OrderStatus, string> = {
   المونتاج: "bg-fuchsia-500/16 text-fuchsia-200",
   مكتمل: "bg-emerald-500/16 text-emerald-200",
   "تم التسليم": "bg-ajn-gold/18 text-ajn-goldSoft",
+  "تم استلام الحجز": "bg-white/8 text-white",
+  "جاري إعداد وكتابة البحث": "bg-sky-500/16 text-sky-200",
+  "قيد التدقيق والمراجعة": "bg-violet-500/16 text-violet-200",
+  "اكتمال النسخة الأولية": "bg-amber-500/16 text-amber-200",
+  "مراجعة المشرف العلمي": "bg-fuchsia-500/16 text-fuchsia-200",
+  "تنفيذ التعديلات المطلوبة": "bg-cyan-500/16 text-cyan-200",
+  "اكتمال البحث النهائي": "bg-emerald-500/16 text-emerald-200",
+  "جاري المتابعة والتنسيق": "bg-sky-500/16 text-sky-200",
+  "جاري الخياطة والتجهيز": "bg-violet-500/16 text-violet-200",
+  "أثناء الطباعة والتغليف": "bg-amber-500/16 text-amber-200",
+  "تم اكتمال الطلب": "bg-emerald-500/16 text-emerald-200",
 };
 
 export function StatusBadge({

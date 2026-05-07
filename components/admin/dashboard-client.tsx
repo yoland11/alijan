@@ -10,13 +10,18 @@ import { OrdersTable } from "@/components/admin/orders-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { COMPLETED_STATUSES, DASHBOARD_STATUS_FILTERS } from "@/lib/constants";
+import {
+  COMPLETED_STATUSES,
+  COMPLETION_READY_STATUSES,
+  DASHBOARD_STATUS_FILTERS,
+} from "@/lib/constants";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { OrderRecord } from "@/lib/types";
 import {
   buildCompletedOrderWhatsAppUrl,
   buildCustomerOrderWhatsAppUrl,
   getOrderSearchableText,
+  isCompletionReadyStatus,
 } from "@/lib/utils";
 import type { OrderSchema } from "@/lib/validators";
 
@@ -85,7 +90,9 @@ export function DashboardClient() {
         : statusFilter === "الطلبات النشطة"
           ? !COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number])
           : statusFilter === "تم الاكتمال"
-            ? order.status === "مكتمل"
+            ? COMPLETION_READY_STATUSES.includes(
+                order.status as (typeof COMPLETION_READY_STATUSES)[number],
+              )
             : order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -93,7 +100,7 @@ export function DashboardClient() {
   const activeOrders = orders.filter(
     (order) => !COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number]),
   ).length;
-  const completedOrders = orders.filter((order) => order.status === "مكتمل").length;
+  const completedOrders = orders.filter((order) => isCompletionReadyStatus(order.status)).length;
   const deliveredOrders = orders.filter((order) => order.status === "تم التسليم").length;
 
   const submitOrder = async (
@@ -205,7 +212,7 @@ export function DashboardClient() {
   };
 
   const openCompletedOrderWhatsApp = (order: OrderRecord) => {
-    if (order.status !== "مكتمل") {
+    if (!isCompletionReadyStatus(order.status)) {
       toast.error("إشعار الاكتمال يظهر فقط عندما تكون حالة الطلب مكتمل.");
       return;
     }
@@ -393,6 +400,28 @@ function getDashboardFilterLabel(filter: (typeof DASHBOARD_STATUS_FILTERS)[numbe
       return "المونتاج / قيد المونتاج";
     case "مكتمل":
       return "مكتمل / جاهز للتسليم";
+    case "تم استلام الحجز":
+      return "تم استلام الحجز";
+    case "جاري إعداد وكتابة البحث":
+      return "جاري إعداد وكتابة البحث";
+    case "قيد التدقيق والمراجعة":
+      return "قيد التدقيق والمراجعة";
+    case "اكتمال النسخة الأولية":
+      return "اكتمال النسخة الأولية";
+    case "مراجعة المشرف العلمي":
+      return "مراجعة المشرف العلمي";
+    case "تنفيذ التعديلات المطلوبة":
+      return "تنفيذ التعديلات المطلوبة";
+    case "اكتمال البحث النهائي":
+      return "اكتمال البحث النهائي";
+    case "جاري المتابعة والتنسيق":
+      return "جاري المتابعة والتنسيق";
+    case "جاري الخياطة والتجهيز":
+      return "جاري الخياطة والتجهيز";
+    case "أثناء الطباعة والتغليف":
+      return "أثناء الطباعة والتغليف";
+    case "تم اكتمال الطلب":
+      return "تم اكتمال الطلب";
     default:
       return filter;
   }

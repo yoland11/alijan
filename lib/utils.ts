@@ -2,7 +2,9 @@ import clsx, { type ClassValue } from "clsx";
 
 import {
   ALBUM_SESSION_TYPES,
+  COMPLETION_READY_STATUSES,
   DEFAULT_ORDER_STATUS_STEPS,
+  GRADUATION_ORDER_STATUS_STEPS,
   GRADUATION_PACKAGE_TYPES,
   GRADUATION_ROBE_TYPES,
   GRADUATION_SASH_TYPES,
@@ -11,6 +13,7 @@ import {
   KOSHAT_TYPES,
   RESEARCH_BINDING_TYPES,
   RESEARCH_INCLUDED_NOTES,
+  RESEARCH_ORDER_STATUS_STEPS,
   SESSION_ORDER_STATUS_STEPS,
 } from "@/lib/constants";
 import type {
@@ -458,30 +461,119 @@ export function getOrderStatusSteps(serviceType: ServiceType = "Album") {
     return KOSHAT_ORDER_STATUS_STEPS;
   }
 
+  if (serviceType === "Research") {
+    return RESEARCH_ORDER_STATUS_STEPS;
+  }
+
+  if (serviceType === "Graduation") {
+    return GRADUATION_ORDER_STATUS_STEPS;
+  }
+
   return DEFAULT_ORDER_STATUS_STEPS;
+}
+
+function toBaseStatus(status: OrderStatus): OrderStatus {
+  switch (status) {
+    case "تم استلام الحجز":
+      return "تم الحجز";
+    case "جاري إعداد وكتابة البحث":
+    case "جاري المتابعة والتنسيق":
+      return "قيد التنفيذ";
+    case "قيد التدقيق والمراجعة":
+    case "جاري الخياطة والتجهيز":
+      return "جاري التجهيز";
+    case "اكتمال النسخة الأولية":
+    case "أثناء الطباعة والتغليف":
+      return "جاري التصوير";
+    case "مراجعة المشرف العلمي":
+    case "تنفيذ التعديلات المطلوبة":
+      return "المونتاج";
+    case "اكتمال البحث النهائي":
+    case "تم اكتمال الطلب":
+      return "مكتمل";
+    default:
+      return status;
+  }
+}
+
+export function getInitialStatusForService(serviceType: ServiceType = "Album"): OrderStatus {
+  return getOrderStatusSteps(serviceType)[0]?.value ?? "تم الحجز";
 }
 
 export function normalizeStatusForService(
   status: OrderStatus,
   serviceType: ServiceType = "Album",
 ) {
-  if (serviceType !== "Session") {
-    if (serviceType !== "Koshat") {
-      return status;
-    }
+  const serviceSteps = getOrderStatusSteps(serviceType);
 
-    if (status === "المونتاج" || status === "تم التسليم") {
-      return "مكتمل";
-    }
-
+  if (serviceSteps.some((step) => step.value === status)) {
     return status;
   }
 
-  if (status === "جاري التجهيز") {
-    return "قيد التنفيذ";
+  const baseStatus = toBaseStatus(status);
+
+  if (serviceType === "Session") {
+    if (baseStatus === "جاري التجهيز") {
+      return "قيد التنفيذ";
+    }
+
+    return serviceSteps.some((step) => step.value === baseStatus)
+      ? baseStatus
+      : getInitialStatusForService(serviceType);
   }
 
-  return status;
+  if (serviceType === "Koshat") {
+    if (baseStatus === "المونتاج" || baseStatus === "تم التسليم") {
+      return "مكتمل";
+    }
+
+    return serviceSteps.some((step) => step.value === baseStatus)
+      ? baseStatus
+      : getInitialStatusForService(serviceType);
+  }
+
+  if (serviceType === "Research") {
+    switch (baseStatus) {
+      case "تم الحجز":
+        return "تم استلام الحجز";
+      case "قيد التنفيذ":
+        return "جاري إعداد وكتابة البحث";
+      case "جاري التجهيز":
+        return "قيد التدقيق والمراجعة";
+      case "جاري التصوير":
+        return "اكتمال النسخة الأولية";
+      case "المونتاج":
+        return "مراجعة المشرف العلمي";
+      case "مكتمل":
+        return "اكتمال البحث النهائي";
+      case "تم التسليم":
+        return "تم التسليم";
+      default:
+        return getInitialStatusForService(serviceType);
+    }
+  }
+
+  if (serviceType === "Graduation") {
+    switch (baseStatus) {
+      case "تم الحجز":
+        return "تم استلام الحجز";
+      case "قيد التنفيذ":
+        return "جاري المتابعة والتنسيق";
+      case "جاري التجهيز":
+        return "جاري الخياطة والتجهيز";
+      case "جاري التصوير":
+      case "المونتاج":
+        return "أثناء الطباعة والتغليف";
+      case "مكتمل":
+        return "تم اكتمال الطلب";
+      case "تم التسليم":
+        return "تم التسليم";
+      default:
+        return getInitialStatusForService(serviceType);
+    }
+  }
+
+  return baseStatus;
 }
 
 export function getOrderStatusLabel(
@@ -510,6 +602,12 @@ export function getStatusIndex(
 ) {
   const normalizedStatus = normalizeStatusForService(status, serviceType);
   return getOrderStatusSteps(serviceType).findIndex((item) => item.value === normalizedStatus);
+}
+
+export function isCompletionReadyStatus(status: OrderStatus) {
+  return COMPLETION_READY_STATUSES.includes(
+    status as (typeof COMPLETION_READY_STATUSES)[number],
+  );
 }
 
 export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {

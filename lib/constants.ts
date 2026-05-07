@@ -45,6 +45,17 @@ export const ORDER_STATUSES = [
   "المونتاج",
   "مكتمل",
   "تم التسليم",
+  "تم استلام الحجز",
+  "جاري إعداد وكتابة البحث",
+  "قيد التدقيق والمراجعة",
+  "اكتمال النسخة الأولية",
+  "مراجعة المشرف العلمي",
+  "تنفيذ التعديلات المطلوبة",
+  "اكتمال البحث النهائي",
+  "جاري المتابعة والتنسيق",
+  "جاري الخياطة والتجهيز",
+  "أثناء الطباعة والتغليف",
+  "تم اكتمال الطلب",
 ] as const;
 
 export const DEFAULT_ORDER_STATUS_STEPS = [
@@ -146,7 +157,89 @@ export const KOSHAT_ORDER_STATUS_STEPS = [
   },
 ] as const;
 
-export const COMPLETED_STATUSES = ["مكتمل", "تم التسليم"] as const;
+export const RESEARCH_ORDER_STATUS_STEPS = [
+  {
+    value: "تم استلام الحجز",
+    label: "تم استلام الحجز",
+    description: "تم استلام الطلب.",
+  },
+  {
+    value: "جاري إعداد وكتابة البحث",
+    label: "جاري إعداد وكتابة البحث",
+    description: "جاري إعداد البحث.",
+  },
+  {
+    value: "قيد التدقيق والمراجعة",
+    label: "قيد التدقيق والمراجعة",
+    description: "جاري التدقيق.",
+  },
+  {
+    value: "اكتمال النسخة الأولية",
+    label: "اكتمال النسخة الأولية",
+    description: "النسخة الأولية جاهزة.",
+  },
+  {
+    value: "مراجعة المشرف العلمي",
+    label: "مراجعة المشرف العلمي",
+    description: "بانتظار المراجعة.",
+  },
+  {
+    value: "تنفيذ التعديلات المطلوبة",
+    label: "تنفيذ التعديلات المطلوبة",
+    description: "جاري تنفيذ التعديلات.",
+  },
+  {
+    value: "اكتمال البحث النهائي",
+    label: "اكتمال البحث النهائي",
+    description: "البحث النهائي جاهز.",
+  },
+  {
+    value: "تم التسليم",
+    label: "تم التسليم",
+    description: "تم التسليم.",
+  },
+] as const;
+
+export const GRADUATION_ORDER_STATUS_STEPS = [
+  {
+    value: "تم استلام الحجز",
+    label: "تم استلام الحجز",
+    description: "تم استلام الطلب.",
+  },
+  {
+    value: "جاري المتابعة والتنسيق",
+    label: "جاري المتابعة والتنسيق",
+    description: "جاري التنسيق.",
+  },
+  {
+    value: "جاري الخياطة والتجهيز",
+    label: "جاري الخياطة والتجهيز",
+    description: "جاري التجهيز.",
+  },
+  {
+    value: "أثناء الطباعة والتغليف",
+    label: "أثناء الطباعة والتغليف",
+    description: "جاري الطباعة والتغليف.",
+  },
+  {
+    value: "تم اكتمال الطلب",
+    label: "تم اكتمال الطلب",
+    description: "الطلب جاهز.",
+  },
+  {
+    value: "تم التسليم",
+    label: "تم التسليم",
+    description: "تم التسليم.",
+  },
+] as const;
+
+export const COMPLETION_READY_STATUSES = [
+  "مكتمل",
+  "اكتمال البحث النهائي",
+  "تم اكتمال الطلب",
+] as const;
+
+export const COMPLETED_STATUSES = [...COMPLETION_READY_STATUSES, "تم التسليم"] as const;
 
 export const DASHBOARD_STATUS_FILTERS = [
   "الكل",

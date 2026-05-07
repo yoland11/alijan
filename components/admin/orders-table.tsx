@@ -8,6 +8,7 @@ import {
   formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
+  isCompletionReadyStatus,
   getResearchCopyLabel,
   getResearchIncludedNotes,
   getStaffFieldLabel,
@@ -90,7 +91,7 @@ export function OrdersTable({
                       <MessageCircleMore className="h-4 w-4" />
                       <span className="hidden 2xl:inline">رابط التتبع</span>
                     </Button>
-                    {order.status === "مكتمل" ? (
+                    {isCompletionReadyStatus(order.status) ? (
                       <Button
                         variant="secondary"
                         className="border-ajn-gold/35 bg-ajn-gold/[0.12] px-3 py-2 text-xs text-ajn-goldSoft hover:bg-ajn-gold/[0.18]"
@@ -168,7 +169,7 @@ export function OrdersTable({
                 <MessageCircleMore className="h-4 w-4" />
                 رابط التتبع
               </Button>
-              {order.status === "مكتمل" ? (
+              {isCompletionReadyStatus(order.status) ? (
                 <Button
                   variant="secondary"
                   className="w-full border-ajn-gold/35 bg-ajn-gold/[0.12] text-ajn-goldSoft hover:bg-ajn-gold/[0.18]"

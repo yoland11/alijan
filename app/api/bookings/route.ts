@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createOrder } from "@/lib/server/orders";
 import { broadcastOrderUpdate } from "@/lib/supabase/realtime";
+import { getInitialStatusForService } from "@/lib/utils";
 import { customerBookingSchema, orderSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
 
     const preparedOrder = orderSchema.safeParse({
       ...customerPayload.data,
-      status: "تم الحجز",
+      status: getInitialStatusForService(customerPayload.data.service_type),
       images: [],
       total_amount: 0,
       received_amount: 0,

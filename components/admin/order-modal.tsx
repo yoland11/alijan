@@ -33,6 +33,7 @@ import {
   createEmptyResearchDetails,
   formatAmountInputValue,
   formatAmountWithCurrency,
+  getInitialStatusForService,
   getResearchIncludedNotes,
   getResearchCopyLabel,
   getStaffFieldLabel,
@@ -73,7 +74,7 @@ const defaultValues: OrderFormInput = {
   research_files: [],
   graduation_details: createEmptyGraduationDetails(),
   booking_date: new Date().toISOString().split("T")[0],
-  status: "تم الحجز",
+  status: getInitialStatusForService("Album"),
   notes: "",
   images: [],
   total_amount: "0",
@@ -215,7 +216,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
       setValue("research_details.copy_count", 0, { shouldDirty: true, shouldValidate: true });
     }
 
-    if ((serviceType === "Session" || serviceType === "Koshat") && currentStatus) {
+    if (currentStatus) {
       const normalizedStatus = normalizeStatusForService(currentStatus, serviceType);
 
       if (normalizedStatus !== currentStatus) {
