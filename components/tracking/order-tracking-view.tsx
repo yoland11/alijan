@@ -43,7 +43,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="space-y-6">
-        <div className="surface-panel p-5 sm:p-7">
+        <div className="surface-panel glass-hover p-5 sm:p-7">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold text-white sm:text-3xl">{order.order_code}</h2>
@@ -138,7 +138,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
               />
             </div>
 
-            <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5">
+            <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <p className="mb-2 text-sm text-ajn-goldSoft">الملاحظات</p>
               <p className="leading-8 text-ajn-ivory">
                 {order.notes || "لا توجد ملاحظات."}
@@ -229,7 +229,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
               </div>
             ) : null}
 
-            <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5">
+            <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <p className="mb-4 text-sm text-ajn-goldSoft">المبالغ</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <InfoCard
@@ -255,7 +255,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ajn-gold px-5 text-sm font-semibold text-black transition hover:bg-ajn-goldSoft sm:w-auto"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ajn-gold px-5 text-sm font-semibold text-black shadow-[0_0_26px_rgba(212,175,55,0.18)] transition hover:-translate-y-0.5 hover:bg-ajn-goldSoft sm:w-auto"
               >
                 <MessageCircleMore className="h-4 w-4" />
                 التواصل عبر واتساب
@@ -265,7 +265,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
         </div>
 
         {isResearch ? (
-          <div className="surface-panel p-5 sm:p-7">
+          <div className="surface-panel glass-hover p-5 sm:p-7">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h3 className="text-xl font-bold text-white sm:text-2xl">ملفات PDF</h3>
@@ -313,7 +313,7 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
           </div>
         ) : null}
 
-        <div className="surface-panel p-5 sm:p-7">
+        <div className="surface-panel glass-hover p-5 sm:p-7">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h3 className="text-xl font-bold text-white sm:text-2xl">الصور</h3>
@@ -326,14 +326,14 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
           {order.images.length ? (
             <div className="grid gap-4 sm:grid-cols-2">
               {order.images.map((imageUrl) => (
-                <div key={imageUrl} className="group overflow-hidden rounded-[26px] border border-ajn-line">
+                <div key={imageUrl} className="group overflow-hidden rounded-[26px] border border-ajn-line bg-white/[0.03]">
                   <div className="relative aspect-[1/1] bg-white/5">
                     <Image
                       src={buildOrderImageProxyUrl(imageUrl)}
                       alt={order.order_code}
                       fill
                       unoptimized
-                      className="object-cover transition duration-500 group-hover:scale-105"
+                      className="object-cover transition duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
                 </div>
@@ -364,7 +364,7 @@ function InfoCard({
   className?: string;
 }) {
   return (
-    <div className={`rounded-3xl border border-ajn-line bg-white/[0.03] p-4 sm:p-5 ${className ?? ""}`}>
+    <div className={`rounded-3xl border border-ajn-line bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-5 ${className ?? ""}`}>
       <div className="mb-3 flex items-center gap-2 text-sm text-ajn-goldSoft">
         {icon}
         {label}
@@ -384,7 +384,7 @@ function DetailListPanel({
   items: { label: string; value: string }[];
 }) {
   return (
-    <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5">
+    <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <div className="mb-4 flex items-center gap-2 text-sm text-ajn-goldSoft">
         {icon}
         {title}

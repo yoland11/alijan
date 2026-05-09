@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { OrderTrackingView } from "@/components/tracking/order-tracking-view";
 import { TrackingSearchForm } from "@/components/tracking/search-form";
+import { AnimatedServicePanel } from "@/components/ui/animated-service-panel";
+import { HomeLinkButton } from "@/components/ui/home-link-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SERVICE_TYPE_LABELS } from "@/lib/constants";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -148,8 +150,10 @@ export function TrackingPageClient() {
 
   return (
     <div className="page-shell pb-20 pt-6 sm:pb-24 sm:pt-10">
-      <div className="section-shell space-y-8">
-        <header className="surface-panel-strong noise-overlay p-5 sm:p-10">
+      <div className="section-shell space-y-7 sm:space-y-8">
+        <HomeLinkButton />
+
+        <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay p-5 sm:p-10">
           <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white sm:text-5xl">تتبع الطلب</h1>
@@ -157,7 +161,7 @@ export function TrackingPageClient() {
           </div>
 
           <TrackingSearchForm query={query} onQueryChange={setQuery} onSubmit={handleSubmit} loading={loading} />
-        </header>
+        </AnimatedServicePanel>
 
         {results.length > 1 && !selectedOrder ? (
           <section className="surface-panel p-5 sm:p-7">
@@ -192,10 +196,29 @@ export function TrackingPageClient() {
           </section>
         ) : null}
 
+        {loading && !selectedOrder ? (
+          <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+            <div className="surface-panel p-6">
+              <div className="shimmer-skeleton mb-4 h-6 w-36 rounded-full" />
+              <div className="shimmer-skeleton mb-3 h-4 w-full rounded-full" />
+              <div className="shimmer-skeleton mb-3 h-4 w-5/6 rounded-full" />
+              <div className="shimmer-skeleton h-60 rounded-[28px]" />
+            </div>
+            <div className="surface-panel p-6">
+              <div className="shimmer-skeleton mb-4 h-6 w-28 rounded-full" />
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div key={index} className="shimmer-skeleton h-14 rounded-[22px]" />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {selectedOrder ? <OrderTrackingView order={selectedOrder} /> : null}
 
         {emptyState ? (
-          <section className="surface-panel p-10 text-center">
+          <section className="luxury-empty">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/[0.04] text-ajn-gold">
               <SearchX className="h-8 w-8" />
             </div>

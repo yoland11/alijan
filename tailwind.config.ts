@@ -20,7 +20,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-cairo)"],
+        sans: ["var(--font-alexandria)"],
         display: ["var(--font-cormorant)"],
       },
       boxShadow: {
@@ -53,4 +53,3 @@ const config: Config = {
 };
 
 export default config;
-

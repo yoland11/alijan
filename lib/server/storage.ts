@@ -14,8 +14,29 @@ interface UploadOptions {
   maxSizeInMb?: number;
 }
 
+interface DeleteStorageFileResult {
+  deleted: boolean;
+  warning?: string;
+}
+
 function getFileExtension(name: string) {
   return name.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function getStoragePathFromPublicUrl(fileUrl: string, bucket: string) {
+  try {
+    const parsed = new URL(fileUrl);
+    const marker = `/storage/v1/object/public/${bucket}/`;
+
+    if (!parsed.pathname.includes(marker)) {
+      return "";
+    }
+
+    const [, filePath = ""] = parsed.pathname.split(marker);
+    return decodeURIComponent(filePath);
+  } catch {
+    return "";
+  }
 }
 
 export async function uploadFilesToStorage(files: File[], options: UploadOptions = {}) {
@@ -68,4 +89,28 @@ export async function uploadFilesToStorage(files: File[], options: UploadOptions
       } satisfies UploadedStorageFile;
     }),
   );
+}
+
+export async function deleteFileFromStorage(fileUrl: string): Promise<DeleteStorageFileResult> {
+  const supabase = createServiceSupabaseClient();
+  const bucket = getStorageBucket();
+  const filePath = getStoragePathFromPublicUrl(fileUrl, bucket);
+
+  if (!filePath) {
+    return {
+      deleted: false,
+      warning: "تعذر حذف الملف من التخزين. تم حذف الرابط فقط.",
+    };
+  }
+
+  const { error } = await supabase.storage.from(bucket).remove([filePath]);
+
+  if (error) {
+    return {
+      deleted: false,
+      warning: "تعذر حذف الملف من التخزين. تم حذف الرابط فقط.",
+    };
+  }
+
+  return { deleted: true };
 }

@@ -12,12 +12,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-ajn-gold text-black hover:bg-ajn-goldSoft focus-visible:ring-ajn-gold/50 shadow-gold",
+    "border border-ajn-gold/30 bg-gradient-to-l from-ajn-gold via-ajn-goldSoft to-ajn-gold text-black hover:brightness-105 focus-visible:ring-ajn-gold/50 shadow-[0_0_28px_rgba(212,175,55,0.14)]",
   secondary:
-    "border border-ajn-line bg-white/[0.05] text-white hover:bg-white/[0.08] focus-visible:ring-white/15",
+    "border border-ajn-line bg-white/[0.05] text-white hover:border-ajn-gold/30 hover:bg-white/[0.08] focus-visible:ring-white/15 backdrop-blur-xl",
   ghost: "text-ajn-ivory hover:bg-white/[0.06] focus-visible:ring-white/15",
   danger:
-    "border border-red-400/35 bg-red-500/10 text-red-200 hover:bg-red-500/16 focus-visible:ring-red-500/30",
+    "border border-red-400/35 bg-red-500/10 text-red-200 hover:bg-red-500/16 focus-visible:ring-red-500/30 backdrop-blur-xl",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -38,4 +38,3 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
-

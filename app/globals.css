@@ -15,10 +15,11 @@ html {
 body {
   min-height: 100vh;
   overflow-x: hidden;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   background:
     radial-gradient(circle at top, rgba(212, 175, 55, 0.18), transparent 34%),
     radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.06), transparent 24%),
-    linear-gradient(180deg, #0a0a0a 0%, #050505 52%, #090909 100%);
+    linear-gradient(180deg, #080808 0%, #040404 52%, #080808 100%);
   color: white;
 }
 
@@ -33,6 +34,20 @@ body::before {
   background-size: 72px 72px;
   mask-image: linear-gradient(to bottom, transparent, black 16%, black 84%, transparent);
   opacity: 0.45;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(212, 175, 55, 0.06), transparent 30%),
+    radial-gradient(circle at 90% 30%, rgba(255, 255, 255, 0.04), transparent 24%),
+    radial-gradient(circle at 40% 100%, rgba(212, 175, 55, 0.06), transparent 26%);
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  animation: ajn-background-shift 20s ease-in-out infinite alternate;
 }
 
 ::selection {
@@ -85,7 +100,7 @@ textarea:-webkit-autofill:focus {
 
 @layer components {
   .page-shell {
-    @apply relative overflow-x-clip;
+    @apply relative overflow-x-clip pb-[7.35rem] md:pb-0;
   }
 
   .section-shell {
@@ -93,11 +108,24 @@ textarea:-webkit-autofill:focus {
   }
 
   .surface-panel {
-    @apply rounded-[28px] border border-ajn-line bg-white/[0.035] shadow-luxe backdrop-blur-xl;
+    @apply rounded-[30px] border border-ajn-line bg-white/[0.045] shadow-luxe backdrop-blur-2xl;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03) inset,
+      0 18px 60px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(212, 175, 55, 0.03);
+    transition:
+      transform 0.28s ease,
+      border-color 0.28s ease,
+      background-color 0.28s ease,
+      box-shadow 0.28s ease;
   }
 
   .surface-panel-strong {
-    @apply rounded-[28px] border border-ajn-line bg-black/60 shadow-gold backdrop-blur-xl;
+    @apply rounded-[30px] border border-ajn-line bg-black/60 shadow-gold backdrop-blur-2xl;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03) inset,
+      0 20px 70px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(212, 175, 55, 0.08);
   }
 
   .gold-text {
@@ -122,6 +150,78 @@ textarea:-webkit-autofill:focus {
       radial-gradient(circle at 90% 10%, rgba(212, 175, 55, 0.12) 0, transparent 18%),
       radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.05) 0, transparent 16%);
     opacity: 0.4;
+  }
+
+  .glass-hover {
+    @apply transition duration-300;
+  }
+
+  .glass-hover:hover {
+    transform: translateY(-3px);
+    border-color: rgba(212, 175, 55, 0.36);
+    background-color: rgba(255, 255, 255, 0.055);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03) inset,
+      0 14px 48px rgba(0, 0, 0, 0.33),
+      0 0 22px rgba(212, 175, 55, 0.1);
+  }
+
+  .sticky-shell {
+    @apply sticky top-4 z-20;
+  }
+
+  .shimmer-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .shimmer-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.09),
+      transparent
+    );
+    animation: shimmer 2.1s linear infinite;
+  }
+
+  .luxury-empty {
+    @apply rounded-[28px] border border-dashed border-ajn-line bg-white/[0.02] p-10 text-center text-ajn-muted backdrop-blur-xl;
+  }
+
+  .aurora-ribbon {
+    background:
+      radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.18), transparent 32%),
+      linear-gradient(90deg, rgba(212, 175, 55, 0.12), rgba(255, 255, 255, 0.04), rgba(212, 175, 55, 0.14));
+    filter: blur(65px);
+    opacity: 0.42;
+    animation: ajn-aurora-drift 18s ease-in-out infinite alternate;
+  }
+
+  .aurora-ribbon-secondary {
+    animation-duration: 22s;
+    opacity: 0.3;
+  }
+
+  .ambient-orb {
+    animation: floaty 12s ease-in-out infinite;
+  }
+
+  .luxury-particle {
+    opacity: 0.5;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
+    animation-name: ajn-particle-drift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .ajn-toast {
+    backdrop-filter: blur(18px);
   }
 
   .hero-title-frame {
@@ -165,6 +265,17 @@ textarea:-webkit-autofill:focus {
   }
 }
 
+.timeline-current-pulse {
+  animation: ajn-pulse-gold 2.2s ease-in-out infinite;
+}
+
+.timeline-glow-bar {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.65), rgba(212, 175, 55, 0.12)),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.12);
+}
+
 @keyframes ajn-frame-glow {
   0%,
   100% {
@@ -206,6 +317,54 @@ textarea:-webkit-autofill:focus {
   }
 }
 
+@keyframes ajn-background-shift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate3d(0, -1%, 0) scale(1.04);
+  }
+}
+
+@keyframes ajn-aurora-drift {
+  0% {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+
+  100% {
+    transform: translate3d(2%, 2%, 0) scale(1.08);
+  }
+}
+
+@keyframes ajn-particle-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.18;
+  }
+
+  50% {
+    transform: translate3d(0, -12px, 0);
+    opacity: 0.58;
+  }
+}
+
+@keyframes ajn-pulse-gold {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(212, 175, 55, 0.18),
+      0 0 0 rgba(212, 175, 55, 0);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(212, 175, 55, 0.08),
+      0 0 24px rgba(212, 175, 55, 0.14);
+  }
+}
+
 @media (max-width: 640px) {
   body::before {
     background-size: 52px 52px;
@@ -231,5 +390,26 @@ textarea:-webkit-autofill:focus {
   .hero-title-frame::before {
     inset: 7px;
     border-radius: 14px;
+  }
+
+  .sticky-shell {
+    top: 0.75rem;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body::before,
+  body::after {
+    display: none !important;
+  }
+
+  .no-print {
+    display: none !important;
   }
 }

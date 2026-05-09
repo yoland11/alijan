@@ -347,7 +347,7 @@ export function maskPhone(phone: string) {
 }
 
 export function isOrderCode(query: string) {
-  return /^AJN-\d{4}$/i.test(normalizeArabicDigits(query).trim());
+  return /^AJN-\d{4}(?:-[A-Z0-9]+)?$/i.test(normalizeArabicDigits(query).trim());
 }
 
 export function normalizeTrackingQuery(query: string) {
@@ -677,6 +677,17 @@ export function buildWhatsAppUrl(order: OrderRecord) {
     `مرحبًا، أود الاستفسار عن حالة طلبي ${order.order_code} باسم ${order.name}.`,
   );
 
+  return `https://wa.me/${number}?text=${message}`;
+}
+
+export function buildFloatingWhatsAppUrl() {
+  const number = normalizePhone(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "");
+
+  if (!number) {
+    return null;
+  }
+
+  const message = encodeURIComponent("مرحبًا، أود الاستفسار عن خدمات AJN.");
   return `https://wa.me/${number}?text=${message}`;
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAdminSession } from "@/lib/auth";
-import { uploadFilesToStorage } from "@/lib/server/storage";
+import { deleteFileFromStorage, uploadFilesToStorage } from "@/lib/server/storage";
 
 export async function POST(request: Request) {
   const session = await getAdminSession();
@@ -23,7 +23,14 @@ export async function POST(request: Request) {
     }
 
     const uploadedFiles = await uploadFilesToStorage(files, {
-      prefix: uploadKind === "research-pdf" ? "research-pdfs" : "order-images",
+      prefix:
+        uploadKind === "research-pdf"
+          ? "research-pdfs"
+          : uploadKind === "product-image"
+            ? "product-images"
+            : uploadKind === "payment-qr"
+              ? "payment-qr"
+              : "order-images",
       allowedMimeTypes:
         uploadKind === "research-pdf" ? ["application/pdf"] : undefined,
       allowedExtensions: uploadKind === "research-pdf" ? ["pdf"] : undefined,
@@ -37,6 +44,35 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر رفع الملفات." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const session = await getAdminSession();
+
+  if (!session) {
+    return NextResponse.json({ message: "غير مصرح." }, { status: 401 });
+  }
+
+  try {
+    const body = (await request.json()) as { src?: string };
+    const src = body.src?.trim() ?? "";
+
+    if (!src) {
+      return NextResponse.json({ message: "رابط الصورة غير صالح." }, { status: 400 });
+    }
+
+    const result = await deleteFileFromStorage(src);
+
+    return NextResponse.json({
+      message: result.warning || "تم حذف الصورة.",
+      warning: result.warning || null,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { message: error instanceof Error ? error.message : "تعذر حذف الصورة." },
       { status: 500 },
     );
   }

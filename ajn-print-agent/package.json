@@ -1,0 +1,17 @@
+{
+  "name": "ajn-print-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AJN Print Agent for automatic in-store printing.",
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3"
+  },
+  "devDependencies": {
+    "electron": "^37.3.1"
+  }
+}

@@ -25,14 +25,16 @@ export function AnimatedServicePanel({
         ref.current,
         {
           autoAlpha: 0,
-          y: 14,
-          scale: 0.985,
+          y: 12,
+          scale: 0.992,
+          filter: "blur(6px)",
         },
         {
           autoAlpha: 1,
           y: 0,
           scale: 1,
-          duration: 0.45,
+          filter: "blur(0px)",
+          duration: 0.36,
           ease: "power2.out",
         },
       );

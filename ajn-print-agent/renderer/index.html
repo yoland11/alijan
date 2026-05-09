@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AJN Print Agent</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero-card">
+        <div>
+          <p class="eyebrow">AJN PRINT AGENT</p>
+          <h1>طباعة المحل</h1>
+        </div>
+        <div class="hero-actions">
+          <button id="open-admin" class="ghost-button" type="button">فتح الإدارة</button>
+        </div>
+      </section>
+
+      <section class="status-grid">
+        <article class="status-card">
+          <span class="label">الاتصال</span>
+          <strong id="connection-status">-</strong>
+        </article>
+        <article class="status-card">
+          <span class="label">الطباعة</span>
+          <strong id="printing-status">-</strong>
+        </article>
+        <article class="status-card">
+          <span class="label">آخر طلب</span>
+          <strong id="last-order">-</strong>
+          <small id="last-order-time">-</small>
+        </article>
+        <article class="status-card">
+          <span class="label">المنتظر</span>
+          <strong id="pending-count">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>التحكم</h2>
+        </div>
+        <div class="button-grid">
+          <button id="start-printing" class="primary-button" type="button">تشغيل الطباعة</button>
+          <button id="stop-printing" class="secondary-button" type="button">إيقاف الطباعة</button>
+          <button id="test-printer" class="secondary-button" type="button">اختبار الطابعة</button>
+          <button id="retry-failed" class="secondary-button" type="button">إعادة المحاولة</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>الإعدادات</h2>
+        </div>
+        <form id="settings-form" class="settings-grid">
+          <label>
+            <span>Supabase URL</span>
+            <input id="supabase-url" name="supabaseUrl" type="url" />
+          </label>
+          <label>
+            <span>Service Role Key</span>
+            <input id="supabase-key" name="supabaseServiceRoleKey" type="password" />
+          </label>
+          <label>
+            <span>نوع الفاتورة</span>
+            <select id="invoice-type" name="invoiceType">
+              <option value="thermal-80">إيصال حراري 80mm</option>
+              <option value="a4">A4</option>
+            </select>
+          </label>
+          <label>
+            <span>عدد النسخ</span>
+            <select id="copies" name="copies">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+          <label>
+            <span>اسم الطابعة</span>
+            <select id="printer-name" name="printerName"></select>
+          </label>
+          <label>
+            <span>رابط الإدارة</span>
+            <input id="admin-url" name="adminUrl" type="url" />
+          </label>
+          <label>
+            <span>كل كم ثانية</span>
+            <input id="poll-interval" name="pollIntervalMs" type="number" min="3000" step="1000" />
+          </label>
+          <label class="checkbox-row">
+            <input id="auto-start-printing" name="autoStartPrinting" type="checkbox" />
+            <span>تشغيل الطباعة تلقائياً</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="launch-on-startup" name="launchOnStartup" type="checkbox" />
+            <span>تشغيل التطبيق مع الجهاز</span>
+          </label>
+          <div class="form-actions">
+            <button class="primary-button" type="submit">حفظ الإعدادات</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>الحالة</h2>
+        </div>
+        <p id="error-text" class="error-text">-</p>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+  </html>

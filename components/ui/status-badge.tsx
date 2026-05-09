@@ -40,7 +40,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+        "inline-flex max-w-full items-center rounded-full border border-white/10 px-3.5 py-1.5 text-center text-xs font-semibold leading-5 shadow-[0_0_20px_rgba(255,255,255,0.02)]",
         toneMap[toneStatus],
       )}
     >
@@ -62,9 +62,9 @@ export function StatusProgressBar({
   const percentage = ((safeIndex + 1) / steps.length) * 100;
 
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-white/8">
+    <div className="h-2.5 overflow-hidden rounded-full border border-white/6 bg-white/8 shadow-[inset_0_1px_6px_rgba(0,0,0,0.25)]">
       <div
-        className="h-full rounded-full bg-gradient-to-l from-ajn-gold to-ajn-goldSoft"
+        className="h-full rounded-full bg-gradient-to-l from-ajn-gold via-ajn-goldSoft to-white/90 shadow-[0_0_18px_rgba(212,175,55,0.3)]"
         style={{ width: `${percentage}%` }}
       />
     </div>

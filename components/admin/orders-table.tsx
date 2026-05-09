@@ -34,7 +34,7 @@ export function OrdersTable({
 }: OrdersTableProps) {
   if (!orders.length) {
     return (
-      <div className="surface-panel p-10 text-center text-sm leading-8 text-ajn-muted">
+      <div className="luxury-empty">
         لا توجد طلبات.
       </div>
     );
