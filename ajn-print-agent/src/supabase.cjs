@@ -1,4 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
+const ws = require("ws");
 
 function createSupabaseAdminClient(settings) {
   if (!settings.supabaseUrl || !settings.supabaseServiceRoleKey) {
@@ -9,6 +10,9 @@ function createSupabaseAdminClient(settings) {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    realtime: {
+      transport: ws,
     },
   });
 }

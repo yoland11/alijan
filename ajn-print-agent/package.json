@@ -9,9 +9,10 @@
     "start": "electron ."
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.3"
+    "@supabase/supabase-js": "^2.103.3",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
-    "electron": "^37.3.1"
+    "electron": "^30.0.0"
   }
 }

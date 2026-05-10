@@ -21,8 +21,47 @@ async function createHiddenPrintWindow(BrowserWindow, settings) {
   return window;
 }
 
-async function printHtml(BrowserWindow, html, settings) {
+function buildPrintOptions(settings, deviceName) {
   const thermal = settings?.invoiceType !== "a4";
+  const base = {
+    silent: true,
+    printBackground: true,
+    margins: {
+      marginType: "none",
+    },
+  };
+
+  if (deviceName) {
+    base.deviceName = deviceName;
+  }
+
+  if (thermal) {
+    base.pageSize = {
+      width: 80000,
+      height: 200000,
+    };
+    base.copies = 1;
+    return base;
+  }
+
+  base.copies = Math.max(1, Number(settings.copies) || 1);
+  return base;
+}
+
+async function sendPrintJob(printWindow, settings, deviceName) {
+  await new Promise((resolve, reject) => {
+    printWindow.webContents.print(buildPrintOptions(settings, deviceName), (success, failureReason) => {
+      if (!success) {
+        reject(new Error(failureReason || "فشلت الطباعة."));
+        return;
+      }
+
+      resolve();
+    });
+  });
+}
+
+async function printHtml(BrowserWindow, html, settings) {
   const printWindow = await createHiddenPrintWindow(BrowserWindow, settings);
   await loadHtml(printWindow, html);
 
@@ -30,40 +69,22 @@ async function printHtml(BrowserWindow, html, settings) {
     printWindow.webContents.once("did-finish-load", resolve);
   });
 
-  await new Promise((resolve, reject) => {
-    printWindow.webContents.print(
-      thermal
-        ? {
-            silent: true,
-            printBackground: true,
-            deviceName: settings.printerName || undefined,
-            copies: Math.max(1, Number(settings.copies) || 1),
-            margins: {
-              marginType: "none",
-            },
-            pageSize: {
-              width: 80000,
-              height: 200000,
-            },
-          }
-        : {
-          silent: true,
-          printBackground: true,
-          deviceName: settings.printerName || undefined,
-          copies: Math.max(1, Number(settings.copies) || 1),
-        },
-      (success, failureReason) => {
-        if (!success) {
-          reject(new Error(failureReason || "فشلت الطباعة."));
-          return;
-        }
+  const selectedPrinterName = String(settings?.printerName || "").trim();
 
-        resolve();
-      },
-    );
-  });
-
-  printWindow.close();
+  try {
+    if (selectedPrinterName) {
+      try {
+        await sendPrintJob(printWindow, settings, selectedPrinterName);
+      } catch (error) {
+        console.error("PRINT_SELECTED_PRINTER_FAILED:", selectedPrinterName, error);
+        await sendPrintJob(printWindow, settings, undefined);
+      }
+    } else {
+      await sendPrintJob(printWindow, settings, undefined);
+    }
+  } finally {
+    printWindow.close();
+  }
 }
 
 async function printOrderInvoice(BrowserWindow, payload) {

@@ -47,6 +47,7 @@
           <button id="stop-printing" class="secondary-button" type="button">إيقاف الطباعة</button>
           <button id="test-printer" class="secondary-button" type="button">اختبار الطابعة</button>
           <button id="retry-failed" class="secondary-button" type="button">إعادة المحاولة</button>
+          <button id="debug-printers" class="secondary-button" type="button">فحص الطابعات</button>
         </div>
       </section>
 
@@ -67,7 +68,7 @@
             <span>نوع الفاتورة</span>
             <select id="invoice-type" name="invoiceType">
               <option value="thermal-80">إيصال حراري 80mm</option>
-              <option value="a4">A4</option>
+              <option value="a4">فاتورة 20×14</option>
             </select>
           </label>
           <label>
@@ -85,6 +86,7 @@
               <input id="printer-name-manual" name="printerNameManual" type="text" placeholder="اكتب اسم الطابعة" />
               <button id="refresh-printers" class="secondary-button small-button" type="button">تحديث قائمة الطابعات</button>
             </div>
+            <small id="default-printer" class="helper-text">الطابعة الافتراضية: -</small>
             <small id="printer-status" class="helper-text">جاري تحميل الطابعات...</small>
           </label>
           <label>

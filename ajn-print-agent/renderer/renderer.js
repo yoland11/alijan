@@ -1,6 +1,8 @@
-/* global window, document */
+/* global window, document, console */
 
 const agentAPI = window.agentAPI || window.ajnPrintAgent || null;
+const isElectronRuntime = Boolean(agentAPI);
+const MANUAL_OPTION_VALUE = "__manual__";
 
 const elements = {
   connectionStatus: document.getElementById("connection-status"),
@@ -17,7 +19,9 @@ const elements = {
   printerName: document.getElementById("printer-name"),
   printerNameManual: document.getElementById("printer-name-manual"),
   printerStatus: document.getElementById("printer-status"),
+  defaultPrinter: document.getElementById("default-printer"),
   refreshPrinters: document.getElementById("refresh-printers"),
+  debugPrinters: document.getElementById("debug-printers"),
   adminUrl: document.getElementById("admin-url"),
   pollInterval: document.getElementById("poll-interval"),
   autoStartPrinting: document.getElementById("auto-start-printing"),
@@ -28,8 +32,6 @@ const elements = {
   retryFailed: document.getElementById("retry-failed"),
   openAdmin: document.getElementById("open-admin"),
 };
-
-const MANUAL_OPTION_VALUE = "__manual__";
 
 let currentPrinters = [];
 let currentSettings = null;
@@ -61,6 +63,22 @@ function renderState(state) {
   setText(elements.errorText, state.lastError || "لا توجد أخطاء.");
 }
 
+function setElectronOnlyControlsDisabled(disabled) {
+  [
+    elements.settingsForm.querySelector('button[type="submit"]'),
+    elements.startPrinting,
+    elements.stopPrinting,
+    elements.testPrinter,
+    elements.retryFailed,
+    elements.refreshPrinters,
+    elements.debugPrinters,
+  ].forEach((element) => {
+    if (element) {
+      element.disabled = disabled;
+    }
+  });
+}
+
 function createFallbackBootstrap() {
   return {
     settings: {
@@ -81,10 +99,10 @@ function createFallbackBootstrap() {
       pendingCount: 0,
       lastPrintedOrderCode: "",
       lastPrintedAt: "",
-      lastError: "يجب تشغيل الواجهة من داخل تطبيق Electron.",
+      lastError: "هذه معاينة HTML فقط. شغّل AJN Print Agent عبر Electron.",
     },
     printers: [],
-    printersError: "لم يتم ربط Electron بهذه الصفحة.",
+    printersError: "شغّل التطبيق عبر npm run dev أو npm run print-agent:dev",
   };
 }
 
@@ -101,7 +119,6 @@ function getSelectedPrinterName() {
   }
 
   const selected = elements.printerName.value;
-
   if (selected === MANUAL_OPTION_VALUE) {
     return elements.printerNameManual.value.trim();
   }
@@ -113,23 +130,29 @@ function updatePrinterStatus(message) {
   setText(elements.printerStatus, message);
 }
 
+function updateDefaultPrinterLabel(printers) {
+  const defaultPrinter = (Array.isArray(printers) ? printers : []).find((printer) => printer.isDefault);
+  setText(elements.defaultPrinter, `الطابعة الافتراضية: ${defaultPrinter?.displayName || "غير محددة"}`);
+}
+
 function populatePrinterSelect(settings, printers, errorMessage = "") {
   currentPrinters = Array.isArray(printers) ? printers : [];
   const selectedName = String(settings?.printerName || "").trim();
   const hasPrinters = currentPrinters.length > 0;
   const selectedExists = hasPrinters && currentPrinters.some((printer) => printer.name === selectedName);
+  updateDefaultPrinterLabel(currentPrinters);
 
   if (!hasPrinters) {
     elements.printerName.innerHTML = `<option value="">لم يتم العثور على أي طابعة</option>`;
     elements.printerName.value = "";
     elements.printerNameManual.value = selectedName;
     setPrinterMode("manual");
-    updatePrinterStatus(errorMessage || "لم يتم العثور على أي طابعة");
+    updatePrinterStatus(errorMessage || "لا توجد طابعات. اكتب الاسم يدويًا.");
     return;
   }
 
   const options = [
-    '<option value="">الطابعة الافتراضية</option>',
+    '<option value="">استخدام الطابعة الافتراضية</option>',
     ...currentPrinters.map((printer) => {
       const selected = printer.name === selectedName ? " selected" : "";
       const suffix = printer.isDefault ? " (افتراضية)" : "";
@@ -144,13 +167,19 @@ function populatePrinterSelect(settings, printers, errorMessage = "") {
   if (selectedName && !selectedExists) {
     elements.printerName.value = MANUAL_OPTION_VALUE;
     setPrinterMode("manual");
-    updatePrinterStatus(errorMessage || "اكتب اسم الطابعة يدويًا.");
+    updatePrinterStatus(errorMessage || "لم تُطابق الطابعة القائمة الحالية. اكتب الاسم يدويًا.");
     return;
   }
 
   setPrinterMode("select");
   elements.printerName.value = selectedName || "";
-  updatePrinterStatus(errorMessage || "تم تحميل الطابعات.");
+
+  if (!selectedName) {
+    updatePrinterStatus(errorMessage || "تم العثور على الطابعات. سيتم استخدام الطابعة الافتراضية.");
+    return;
+  }
+
+  updatePrinterStatus(errorMessage || "تم العثور على الطابعات.");
 }
 
 function renderSettings(settings, printers = currentPrinters, printersError = "") {
@@ -163,7 +192,6 @@ function renderSettings(settings, printers = currentPrinters, printersError = ""
   elements.pollInterval.value = String(settings.pollIntervalMs || 5000);
   elements.autoStartPrinting.checked = settings.autoStartPrinting !== false;
   elements.launchOnStartup.checked = Boolean(settings.launchOnStartup);
-
   populatePrinterSelect(settings, printers, printersError);
 }
 
@@ -171,7 +199,7 @@ async function refreshPrinters() {
   updatePrinterStatus("جاري تحديث قائمة الطابعات...");
 
   if (!agentAPI?.listPrinters) {
-    populatePrinterSelect(currentSettings || {}, [], "لم يتم ربط Electron بهذه الصفحة.");
+    populatePrinterSelect(currentSettings || {}, [], "يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
@@ -187,6 +215,7 @@ async function refreshBootstrap() {
   const bootstrap = agentAPI?.getBootstrap ? await agentAPI.getBootstrap() : createFallbackBootstrap();
   renderState(bootstrap.state);
   renderSettings(bootstrap.settings, bootstrap.printers || [], bootstrap.printersError || "");
+  setElectronOnlyControlsDisabled(!isElectronRuntime);
 }
 
 elements.printerName.addEventListener("change", () => {
@@ -198,18 +227,34 @@ elements.printerName.addEventListener("change", () => {
   }
 
   setPrinterMode("select");
-  updatePrinterStatus(currentPrinters.length ? "تم اختيار الطابعة." : "لم يتم العثور على أي طابعة");
+  if (!elements.printerName.value) {
+    updatePrinterStatus("سيتم استخدام الطابعة الافتراضية.");
+    return;
+  }
+
+  updatePrinterStatus("تم اختيار الطابعة.");
 });
 
 elements.refreshPrinters.addEventListener("click", async () => {
   await refreshPrinters();
 });
 
+elements.debugPrinters.addEventListener("click", async () => {
+  if (!agentAPI?.debugPrinters) {
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
+    return;
+  }
+
+  const printers = await agentAPI.debugPrinters();
+  console.log("PRINTERS:", printers);
+  updatePrinterStatus(printers.length ? "تم العثور على الطابعات" : "لا توجد طابعات");
+});
+
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!agentAPI?.saveSettings) {
-    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
@@ -231,38 +276,45 @@ elements.settingsForm.addEventListener("submit", async (event) => {
 });
 
 elements.startPrinting.addEventListener("click", async () => {
-  if (!agentAPI?.startPrinting) {
-    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+  if (!agentAPI?.startWatcher) {
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
-  const state = await agentAPI.startPrinting();
+  const state = await agentAPI.startWatcher();
   renderState(state);
 });
 
 elements.stopPrinting.addEventListener("click", async () => {
-  if (!agentAPI?.stopPrinting) {
-    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+  if (!agentAPI?.stopWatcher) {
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
-  const state = await agentAPI.stopPrinting();
+  const state = await agentAPI.stopWatcher();
   renderState(state);
 });
 
 elements.testPrinter.addEventListener("click", async () => {
-  if (!agentAPI?.testPrinter) {
-    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+  if (!agentAPI?.testPrint) {
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
-  const state = await agentAPI.testPrinter();
-  renderState(state);
+  try {
+    const result = await agentAPI.testPrint({
+      printerName: getSelectedPrinterName(),
+    });
+    renderState(result.state || result);
+    updatePrinterStatus(result.message || "تم إرسال الطباعة بنجاح");
+  } catch (error) {
+    updatePrinterStatus(error instanceof Error ? error.message : "فشلت طباعة الاختبار.");
+  }
 });
 
 elements.retryFailed.addEventListener("click", async () => {
   if (!agentAPI?.retryFailed) {
-    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    updatePrinterStatus("يجب تشغيل التطبيق عبر Electron.");
     return;
   }
 
