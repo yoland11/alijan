@@ -54,13 +54,13 @@ export function InvoicePrintActions({
       const imageData = canvas.toDataURL("image/png", 1);
 
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: "portrait",
         unit: "mm",
-        format: [140, 200],
+        format: "a4",
       });
 
-      const pageWidth = 200;
-      const pageHeight = 140;
+      const pageWidth = 210;
+      const pageHeight = 297;
       const margin = 0;
 
       const usableWidth = pageWidth - margin * 2;
@@ -75,7 +75,7 @@ export function InvoicePrintActions({
       const renderHeight = imgHeight * ratio;
 
       const x = (pageWidth - renderWidth) / 2;
-      const y = (pageHeight - renderHeight) / 2;
+      const y = 0;
 
       pdf.addImage(
         imageData,

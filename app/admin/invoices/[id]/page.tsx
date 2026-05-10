@@ -34,30 +34,56 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
     <div className="min-h-screen bg-[#090909] px-3 py-5 text-black print:min-h-0 print:bg-white print:px-0 print:py-0">
       <style>{`
         @page {
-          size: 20cm 14cm;
+          size: A4 portrait;
           margin: 0;
         }
 
         @media print {
-          html, body {
-            width: 20cm;
-            height: 14cm;
+          html,
+          body {
+            width: 210mm;
+            min-height: 297mm;
             margin: 0;
             padding: 0;
-            overflow: visible;
             background: #ffffff !important;
+            overflow: visible;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+
+          .print-page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #ffffff !important;
+          }
+
+          .invoice-card {
+            width: 180mm !important;
+            max-width: 180mm !important;
+            margin-top: 10mm !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            overflow: visible !important;
+            position: static !important;
+            transform: none !important;
+            box-shadow: none !important;
+            break-inside: avoid-page;
+            page-break-inside: avoid;
           }
         }
       `}</style>
 
-      <div className="mx-auto w-full max-w-[1200px] print:m-0 print:max-w-none">
+      <div className="print-page mx-auto w-full max-w-[1200px] print:max-w-none">
         <InvoicePrintActions orderId={order.id} orderCode={order.order_code} autoPrint={autoPrint} />
 
         <article
           id="invoice-document"
-          className="mx-auto overflow-hidden rounded-[26px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:h-[14cm] print:w-[20cm] print:rounded-none print:border-0 print:shadow-none"
+          className="invoice-card mx-auto overflow-hidden rounded-[26px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:rounded-none print:border print:border-black/15"
         >
           <InvoiceSheet
             orderCode={order.order_code}
@@ -110,8 +136,8 @@ function InvoiceSheet({
   issuedTime: string;
 }) {
   return (
-    <section className="h-full w-full bg-white p-[5mm] print:p-[5mm]">
-      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-[3mm] border border-black px-[4mm] py-[4mm]">
+    <section className="h-full w-full bg-white p-[5mm] print:h-auto print:p-[5mm]">
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-[3mm] border border-black px-[4mm] py-[4mm] print:h-auto">
         <header className="grid grid-cols-[52mm_1fr] gap-[4mm] border-b border-black pb-[3mm]">
           <div className="flex flex-col items-start justify-between">
             <div className="flex h-[31mm] w-[31mm] items-center justify-center rounded-full border-[3px] border-[#6f6f6f] bg-[radial-gradient(circle_at_72%_74%,#d3a330_0_26%,transparent_27%),linear-gradient(135deg,#595959_0%,#2d2d2d_65%,#0f0f0f_100%)] text-[15px] font-black tracking-[0.16em] text-white">
