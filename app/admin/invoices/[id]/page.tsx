@@ -60,12 +60,15 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
             justify-content: center;
             align-items: flex-start;
             background: #ffffff !important;
+            overflow: visible !important;
           }
 
           .invoice-card {
-            width: 180mm !important;
-            max-width: 180mm !important;
-            margin-top: 10mm !important;
+            width: 202mm !important;
+            max-width: none !important;
+            min-width: 202mm !important;
+            margin-top: 4mm !important;
+            margin-bottom: 0 !important;
             margin-left: auto !important;
             margin-right: auto !important;
             overflow: visible !important;
@@ -83,7 +86,7 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
 
         <article
           id="invoice-document"
-          className="invoice-card mx-auto overflow-hidden rounded-[26px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:rounded-none print:border print:border-black/15"
+          className="invoice-card mx-auto overflow-hidden rounded-[26px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:rounded-none print:border print:border-black/20"
         >
           <InvoiceSheet
             orderCode={order.order_code}
