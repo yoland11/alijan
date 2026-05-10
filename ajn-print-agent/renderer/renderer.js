@@ -1,5 +1,7 @@
 /* global window, document */
 
+const agentAPI = window.agentAPI || window.ajnPrintAgent || null;
+
 const elements = {
   connectionStatus: document.getElementById("connection-status"),
   printingStatus: document.getElementById("printing-status"),
@@ -59,6 +61,33 @@ function renderState(state) {
   setText(elements.errorText, state.lastError || "لا توجد أخطاء.");
 }
 
+function createFallbackBootstrap() {
+  return {
+    settings: {
+      supabaseUrl: "",
+      supabaseServiceRoleKey: "",
+      invoiceType: "thermal-80",
+      copies: 1,
+      printerName: "",
+      adminUrl: "https://ali-jan1.vercel.app/admin",
+      pollIntervalMs: 5000,
+      autoStartPrinting: true,
+      launchOnStartup: false,
+    },
+    state: {
+      connected: false,
+      running: false,
+      busy: false,
+      pendingCount: 0,
+      lastPrintedOrderCode: "",
+      lastPrintedAt: "",
+      lastError: "يجب تشغيل الواجهة من داخل تطبيق Electron.",
+    },
+    printers: [],
+    printersError: "لم يتم ربط Electron بهذه الصفحة.",
+  };
+}
+
 function setPrinterMode(mode) {
   printerMode = mode;
   const manualVisible = mode === "manual";
@@ -88,7 +117,7 @@ function populatePrinterSelect(settings, printers, errorMessage = "") {
   currentPrinters = Array.isArray(printers) ? printers : [];
   const selectedName = String(settings?.printerName || "").trim();
   const hasPrinters = currentPrinters.length > 0;
-  const selectedExists = hasPrinters && currentPrinters.includes(selectedName);
+  const selectedExists = hasPrinters && currentPrinters.some((printer) => printer.name === selectedName);
 
   if (!hasPrinters) {
     elements.printerName.innerHTML = `<option value="">لم يتم العثور على أي طابعة</option>`;
@@ -101,9 +130,10 @@ function populatePrinterSelect(settings, printers, errorMessage = "") {
 
   const options = [
     '<option value="">الطابعة الافتراضية</option>',
-    ...currentPrinters.map((printerName) => {
-      const selected = printerName === selectedName ? " selected" : "";
-      return `<option value="${printerName}"${selected}>${printerName}</option>`;
+    ...currentPrinters.map((printer) => {
+      const selected = printer.name === selectedName ? " selected" : "";
+      const suffix = printer.isDefault ? " (افتراضية)" : "";
+      return `<option value="${printer.name}"${selected}>${printer.displayName}${suffix}</option>`;
     }),
     `<option value="${MANUAL_OPTION_VALUE}">إدخال يدوي</option>`,
   ].join("");
@@ -140,8 +170,13 @@ function renderSettings(settings, printers = currentPrinters, printersError = ""
 async function refreshPrinters() {
   updatePrinterStatus("جاري تحديث قائمة الطابعات...");
 
+  if (!agentAPI?.listPrinters) {
+    populatePrinterSelect(currentSettings || {}, [], "لم يتم ربط Electron بهذه الصفحة.");
+    return;
+  }
+
   try {
-    const result = await window.ajnPrintAgent.listPrinters();
+    const result = await agentAPI.listPrinters();
     populatePrinterSelect(currentSettings || {}, result.printers || [], result.error || "");
   } catch (error) {
     populatePrinterSelect(currentSettings || {}, [], error instanceof Error ? error.message : "تعذر جلب الطابعات.");
@@ -149,7 +184,7 @@ async function refreshPrinters() {
 }
 
 async function refreshBootstrap() {
-  const bootstrap = await window.ajnPrintAgent.getBootstrap();
+  const bootstrap = agentAPI?.getBootstrap ? await agentAPI.getBootstrap() : createFallbackBootstrap();
   renderState(bootstrap.state);
   renderSettings(bootstrap.settings, bootstrap.printers || [], bootstrap.printersError || "");
 }
@@ -173,7 +208,12 @@ elements.refreshPrinters.addEventListener("click", async () => {
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const result = await window.ajnPrintAgent.saveSettings({
+  if (!agentAPI?.saveSettings) {
+    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    return;
+  }
+
+  const result = await agentAPI.saveSettings({
     supabaseUrl: elements.supabaseUrl.value,
     supabaseServiceRoleKey: elements.supabaseKey.value,
     invoiceType: elements.invoiceType.value,
@@ -191,31 +231,60 @@ elements.settingsForm.addEventListener("submit", async (event) => {
 });
 
 elements.startPrinting.addEventListener("click", async () => {
-  const state = await window.ajnPrintAgent.startPrinting();
+  if (!agentAPI?.startPrinting) {
+    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    return;
+  }
+
+  const state = await agentAPI.startPrinting();
   renderState(state);
 });
 
 elements.stopPrinting.addEventListener("click", async () => {
-  const state = await window.ajnPrintAgent.stopPrinting();
+  if (!agentAPI?.stopPrinting) {
+    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    return;
+  }
+
+  const state = await agentAPI.stopPrinting();
   renderState(state);
 });
 
 elements.testPrinter.addEventListener("click", async () => {
-  const state = await window.ajnPrintAgent.testPrinter();
+  if (!agentAPI?.testPrinter) {
+    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    return;
+  }
+
+  const state = await agentAPI.testPrinter();
   renderState(state);
 });
 
 elements.retryFailed.addEventListener("click", async () => {
-  const state = await window.ajnPrintAgent.retryFailed();
+  if (!agentAPI?.retryFailed) {
+    updatePrinterStatus("يجب تشغيل التطبيق من داخل Electron.");
+    return;
+  }
+
+  const state = await agentAPI.retryFailed();
   renderState(state);
 });
 
 elements.openAdmin.addEventListener("click", async () => {
-  await window.ajnPrintAgent.openAdmin();
+  if (!agentAPI?.openAdmin) {
+    if (currentSettings?.adminUrl) {
+      window.open(currentSettings.adminUrl, "_blank", "noopener,noreferrer");
+    }
+    return;
+  }
+
+  await agentAPI.openAdmin();
 });
 
-window.ajnPrintAgent.onState((state) => {
-  renderState(state);
-});
+if (agentAPI?.onState) {
+  agentAPI.onState((state) => {
+    renderState(state);
+  });
+}
 
 void refreshBootstrap();

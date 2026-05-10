@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("ajnPrintAgent", {
+const agentAPI = {
   getBootstrap: () => ipcRenderer.invoke("agent:get-bootstrap"),
   saveSettings: (settings) => ipcRenderer.invoke("agent:save-settings", settings),
   startPrinting: () => ipcRenderer.invoke("agent:start-printing"),
@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld("ajnPrintAgent", {
     ipcRenderer.on("agent:state", listener);
     return () => ipcRenderer.removeListener("agent:state", listener);
   },
-});
+};
+
+contextBridge.exposeInMainWorld("agentAPI", agentAPI);
+contextBridge.exposeInMainWorld("ajnPrintAgent", agentAPI);

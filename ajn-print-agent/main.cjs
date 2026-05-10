@@ -9,65 +9,29 @@ let settingsStore = null;
 let watcher = null;
 
 async function listSystemPrinters() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
+  const win = mainWindow && !mainWindow.isDestroyed() ? mainWindow : BrowserWindow.getAllWindows()[0];
+
+  if (!win || win.isDestroyed()) {
     return [];
   }
 
   try {
-    const printers = await mainWindow.webContents.getPrintersAsync();
-    return printers.map((printer) => printer.name).filter(Boolean).sort((a, b) => a.localeCompare(b));
+    const printers = await win.webContents.getPrintersAsync();
+    return printers
+      .map((printer) => ({
+        name: printer.name,
+        displayName: printer.displayName || printer.name,
+        isDefault: Boolean(printer.isDefault),
+        status: typeof printer.status === "number" ? printer.status : 0,
+      }))
+      .filter((printer) => printer.name)
+      .sort((a, b) => a.displayName.localeCompare(b.displayName, "ar"));
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : "تعذر جلب الطابعات من النظام.");
   }
 }
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1180,
-    height: 860,
-    minWidth: 980,
-    minHeight: 760,
-    title: "AJN Print Agent",
-    backgroundColor: "#050505",
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  Menu.setApplicationMenu(null);
-  void mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
-}
-
-function emitState() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    return;
-  }
-
-  mainWindow.webContents.send("agent:state", watcher.getState());
-}
-
-app.whenReady().then(async () => {
-  settingsStore = createSettingsStore(app);
-  const settings = settingsStore.load();
-  app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
-
-  watcher = createWatcher({
-    BrowserWindow,
-    getSettings: () => settingsStore.get(),
-    onStateChange: emitState,
-  });
-
-  createWindow();
-  await watcher.refreshConnection();
-
-  if (settings.autoStartPrinting) {
-    await watcher.start();
-  }
-
+function registerIpcHandlers() {
   ipcMain.handle("agent:get-bootstrap", async () => {
     let printers = [];
     let printersError = "";
@@ -124,6 +88,55 @@ app.whenReady().then(async () => {
     await shell.openExternal(settings.adminUrl || "https://ali-jan1.vercel.app/admin");
     return true;
   });
+}
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1180,
+    height: 860,
+    minWidth: 980,
+    minHeight: 760,
+    title: "AJN Print Agent",
+    backgroundColor: "#050505",
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  Menu.setApplicationMenu(null);
+  void mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+}
+
+function emitState() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  mainWindow.webContents.send("agent:state", watcher.getState());
+}
+
+app.whenReady().then(async () => {
+  settingsStore = createSettingsStore(app);
+  const settings = settingsStore.load();
+  app.setLoginItemSettings({ openAtLogin: settings.launchOnStartup });
+
+  watcher = createWatcher({
+    BrowserWindow,
+    getSettings: () => settingsStore.get(),
+    onStateChange: emitState,
+  });
+
+  registerIpcHandlers();
+  createWindow();
+  await watcher.refreshConnection();
+
+  if (settings.autoStartPrinting) {
+    await watcher.start();
+  }
 
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) {
