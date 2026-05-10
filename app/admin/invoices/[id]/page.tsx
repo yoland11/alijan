@@ -67,6 +67,9 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
             width: 202mm !important;
             max-width: none !important;
             min-width: 202mm !important;
+            height: 130mm !important;
+            min-height: 130mm !important;
+            max-height: 130mm !important;
             margin-top: 4mm !important;
             margin-bottom: 0 !important;
             margin-left: auto !important;
@@ -139,8 +142,8 @@ function InvoiceSheet({
   issuedTime: string;
 }) {
   return (
-    <section className="h-full w-full bg-white p-[5mm] print:h-auto print:p-[5mm]">
-      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-[3mm] border border-black px-[4mm] py-[4mm] print:h-auto">
+    <section className="h-full w-full bg-white p-[5mm] print:h-[130mm] print:p-[5mm]">
+      <div className="grid h-full grid-rows-[auto_auto_1fr] gap-[3mm] border border-black px-[4mm] py-[4mm] print:h-full">
         <header className="grid grid-cols-[52mm_1fr] gap-[4mm] border-b border-black pb-[3mm]">
           <div className="flex flex-col items-start justify-between">
             <div className="flex h-[31mm] w-[31mm] items-center justify-center rounded-full border-[3px] border-[#6f6f6f] bg-[radial-gradient(circle_at_72%_74%,#d3a330_0_26%,transparent_27%),linear-gradient(135deg,#595959_0%,#2d2d2d_65%,#0f0f0f_100%)] text-[15px] font-black tracking-[0.16em] text-white">
