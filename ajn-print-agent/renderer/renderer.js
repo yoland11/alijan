@@ -13,6 +13,9 @@ const elements = {
   invoiceType: document.getElementById("invoice-type"),
   copies: document.getElementById("copies"),
   printerName: document.getElementById("printer-name"),
+  printerNameManual: document.getElementById("printer-name-manual"),
+  printerStatus: document.getElementById("printer-status"),
+  refreshPrinters: document.getElementById("refresh-printers"),
   adminUrl: document.getElementById("admin-url"),
   pollInterval: document.getElementById("poll-interval"),
   autoStartPrinting: document.getElementById("auto-start-printing"),
@@ -23,6 +26,12 @@ const elements = {
   retryFailed: document.getElementById("retry-failed"),
   openAdmin: document.getElementById("open-admin"),
 };
+
+const MANUAL_OPTION_VALUE = "__manual__";
+
+let currentPrinters = [];
+let currentSettings = null;
+let printerMode = "select";
 
 function setText(element, value) {
   if (element) {
@@ -50,7 +59,72 @@ function renderState(state) {
   setText(elements.errorText, state.lastError || "لا توجد أخطاء.");
 }
 
-function renderSettings(settings, printers) {
+function setPrinterMode(mode) {
+  printerMode = mode;
+  const manualVisible = mode === "manual";
+  elements.printerName.style.display = manualVisible ? "none" : "block";
+  elements.printerNameManual.style.display = manualVisible ? "block" : "none";
+}
+
+function getSelectedPrinterName() {
+  if (printerMode === "manual") {
+    return elements.printerNameManual.value.trim();
+  }
+
+  const selected = elements.printerName.value;
+
+  if (selected === MANUAL_OPTION_VALUE) {
+    return elements.printerNameManual.value.trim();
+  }
+
+  return selected.trim();
+}
+
+function updatePrinterStatus(message) {
+  setText(elements.printerStatus, message);
+}
+
+function populatePrinterSelect(settings, printers, errorMessage = "") {
+  currentPrinters = Array.isArray(printers) ? printers : [];
+  const selectedName = String(settings?.printerName || "").trim();
+  const hasPrinters = currentPrinters.length > 0;
+  const selectedExists = hasPrinters && currentPrinters.includes(selectedName);
+
+  if (!hasPrinters) {
+    elements.printerName.innerHTML = `<option value="">لم يتم العثور على أي طابعة</option>`;
+    elements.printerName.value = "";
+    elements.printerNameManual.value = selectedName;
+    setPrinterMode("manual");
+    updatePrinterStatus(errorMessage || "لم يتم العثور على أي طابعة");
+    return;
+  }
+
+  const options = [
+    '<option value="">الطابعة الافتراضية</option>',
+    ...currentPrinters.map((printerName) => {
+      const selected = printerName === selectedName ? " selected" : "";
+      return `<option value="${printerName}"${selected}>${printerName}</option>`;
+    }),
+    `<option value="${MANUAL_OPTION_VALUE}">إدخال يدوي</option>`,
+  ].join("");
+
+  elements.printerName.innerHTML = options;
+  elements.printerNameManual.value = selectedExists ? "" : selectedName;
+
+  if (selectedName && !selectedExists) {
+    elements.printerName.value = MANUAL_OPTION_VALUE;
+    setPrinterMode("manual");
+    updatePrinterStatus(errorMessage || "اكتب اسم الطابعة يدويًا.");
+    return;
+  }
+
+  setPrinterMode("select");
+  elements.printerName.value = selectedName || "";
+  updatePrinterStatus(errorMessage || "تم تحميل الطابعات.");
+}
+
+function renderSettings(settings, printers = currentPrinters, printersError = "") {
+  currentSettings = settings;
   elements.supabaseUrl.value = settings.supabaseUrl || "";
   elements.supabaseKey.value = settings.supabaseServiceRoleKey || "";
   elements.invoiceType.value = settings.invoiceType || "thermal-80";
@@ -60,25 +134,41 @@ function renderSettings(settings, printers) {
   elements.autoStartPrinting.checked = settings.autoStartPrinting !== false;
   elements.launchOnStartup.checked = Boolean(settings.launchOnStartup);
 
-  const printerOptions = ['<option value="">الطابعة الافتراضية</option>']
-    .concat(
-      printers.map((printerName) => {
-        const selected = printerName === settings.printerName ? " selected" : "";
-        return `<option value="${printerName}"${selected}>${printerName}</option>`;
-      }),
-    )
-    .join("");
+  populatePrinterSelect(settings, printers, printersError);
+}
 
-  elements.printerName.innerHTML = printerOptions;
-  elements.printerName.value = settings.printerName || "";
+async function refreshPrinters() {
+  updatePrinterStatus("جاري تحديث قائمة الطابعات...");
+
+  try {
+    const result = await window.ajnPrintAgent.listPrinters();
+    populatePrinterSelect(currentSettings || {}, result.printers || [], result.error || "");
+  } catch (error) {
+    populatePrinterSelect(currentSettings || {}, [], error instanceof Error ? error.message : "تعذر جلب الطابعات.");
+  }
 }
 
 async function refreshBootstrap() {
   const bootstrap = await window.ajnPrintAgent.getBootstrap();
-  const printers = await window.ajnPrintAgent.listPrinters();
   renderState(bootstrap.state);
-  renderSettings(bootstrap.settings, printers);
+  renderSettings(bootstrap.settings, bootstrap.printers || [], bootstrap.printersError || "");
 }
+
+elements.printerName.addEventListener("change", () => {
+  if (elements.printerName.value === MANUAL_OPTION_VALUE) {
+    setPrinterMode("manual");
+    updatePrinterStatus("اكتب اسم الطابعة يدويًا.");
+    elements.printerNameManual.focus();
+    return;
+  }
+
+  setPrinterMode("select");
+  updatePrinterStatus(currentPrinters.length ? "تم اختيار الطابعة." : "لم يتم العثور على أي طابعة");
+});
+
+elements.refreshPrinters.addEventListener("click", async () => {
+  await refreshPrinters();
+});
 
 elements.settingsForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -88,16 +178,16 @@ elements.settingsForm.addEventListener("submit", async (event) => {
     supabaseServiceRoleKey: elements.supabaseKey.value,
     invoiceType: elements.invoiceType.value,
     copies: Number(elements.copies.value),
-    printerName: elements.printerName.value,
+    printerName: getSelectedPrinterName(),
     adminUrl: elements.adminUrl.value,
     pollIntervalMs: Number(elements.pollInterval.value),
     autoStartPrinting: elements.autoStartPrinting.checked,
     launchOnStartup: elements.launchOnStartup.checked,
   });
 
-  const printers = await window.ajnPrintAgent.listPrinters();
+  currentSettings = result.settings;
   renderState(result.state);
-  renderSettings(result.settings, printers);
+  await refreshPrinters();
 });
 
 elements.startPrinting.addEventListener("click", async () => {

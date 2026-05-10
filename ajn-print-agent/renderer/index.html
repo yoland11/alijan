@@ -80,7 +80,12 @@
           </label>
           <label>
             <span>اسم الطابعة</span>
-            <select id="printer-name" name="printerName"></select>
+            <div class="printer-picker">
+              <select id="printer-name" name="printerName"></select>
+              <input id="printer-name-manual" name="printerNameManual" type="text" placeholder="اكتب اسم الطابعة" />
+              <button id="refresh-printers" class="secondary-button small-button" type="button">تحديث قائمة الطابعات</button>
+            </div>
+            <small id="printer-status" class="helper-text">جاري تحميل الطابعات...</small>
           </label>
           <label>
             <span>رابط الإدارة</span>

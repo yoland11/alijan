@@ -8,6 +8,19 @@ let mainWindow = null;
 let settingsStore = null;
 let watcher = null;
 
+async function listSystemPrinters() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return [];
+  }
+
+  try {
+    const printers = await mainWindow.webContents.getPrintersAsync();
+    return printers.map((printer) => printer.name).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "تعذر جلب الطابعات من النظام.");
+  }
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1180,
@@ -55,10 +68,23 @@ app.whenReady().then(async () => {
     await watcher.start();
   }
 
-  ipcMain.handle("agent:get-bootstrap", async () => ({
-    settings: settingsStore.get(),
-    state: watcher.getState(),
-  }));
+  ipcMain.handle("agent:get-bootstrap", async () => {
+    let printers = [];
+    let printersError = "";
+
+    try {
+      printers = await listSystemPrinters();
+    } catch (error) {
+      printersError = error instanceof Error ? error.message : "تعذر جلب الطابعات.";
+    }
+
+    return {
+      settings: settingsStore.get(),
+      state: watcher.getState(),
+      printers,
+      printersError,
+    };
+  });
 
   ipcMain.handle("agent:save-settings", async (_event, patch) => {
     const nextSettings = settingsStore.save(patch);
@@ -81,8 +107,17 @@ app.whenReady().then(async () => {
     return watcher.getState();
   });
   ipcMain.handle("agent:list-printers", async () => {
-    const printers = await mainWindow.webContents.getPrintersAsync();
-    return printers.map((printer) => printer.name).sort((a, b) => a.localeCompare(b));
+    try {
+      return {
+        printers: await listSystemPrinters(),
+        error: "",
+      };
+    } catch (error) {
+      return {
+        printers: [],
+        error: error instanceof Error ? error.message : "تعذر جلب الطابعات.",
+      };
+    }
   });
   ipcMain.handle("agent:open-admin", async () => {
     const settings = settingsStore.get();
