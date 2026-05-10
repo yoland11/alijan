@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 
 import { InvoicePrintActions } from "@/components/admin/invoice-print-actions";
@@ -33,9 +34,267 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
   return (
     <div className="min-h-screen bg-[#090909] px-3 py-5 text-black print:min-h-0 print:bg-white print:px-0 print:py-0">
       <style>{`
+        .invoice-page,
+        .invoice-page *,
+        .invoice-card,
+        .invoice-card * {
+          box-sizing: border-box;
+        }
+
         @page {
           size: A4 portrait;
           margin: 0;
+        }
+
+        .invoice-page {
+          margin: 0 auto;
+        }
+
+        .invoice-card {
+          width: 202mm;
+          min-width: 202mm;
+          max-width: 202mm;
+          height: 130mm;
+          min-height: 130mm;
+          max-height: 130mm;
+          margin: 0 auto;
+          overflow: hidden;
+          background: #ffffff;
+        }
+
+        .invoice-shell {
+          width: 100%;
+          height: 100%;
+          padding: 4mm;
+          background: #ffffff;
+        }
+
+        .invoice-frame {
+          display: flex;
+          height: 100%;
+          width: 100%;
+          flex-direction: column;
+          gap: 2.4mm;
+          overflow: hidden;
+          border: 1px solid #000;
+          padding: 3.2mm;
+          background: #ffffff;
+        }
+
+        .invoice-header {
+          display: grid;
+          grid-template-columns: 45mm minmax(0, 1fr);
+          gap: 3mm;
+          min-width: 0;
+          border-bottom: 1px solid #000;
+          padding-bottom: 2.5mm;
+        }
+
+        .invoice-logo-column,
+        .invoice-title-column {
+          min-width: 0;
+        }
+
+        .invoice-logo-column {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: space-between;
+        }
+
+        .invoice-logo-wrap {
+          display: flex;
+          height: 28mm;
+          width: 28mm;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          background: #ffffff;
+        }
+
+        .invoice-logo-image {
+          height: 100%;
+          width: 100%;
+          object-fit: contain;
+        }
+
+        .invoice-brand {
+          margin-top: 1.2mm;
+          text-align: right;
+        }
+
+        .invoice-brand-ar {
+          font-size: 12px;
+          font-weight: 900;
+          line-height: 1.1;
+          color: #000;
+        }
+
+        .invoice-brand-en {
+          margin-top: 0.6mm;
+          font-size: 7px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          color: rgba(0, 0, 0, 0.74);
+        }
+
+        .invoice-title-column {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          text-align: right;
+        }
+
+        .invoice-heading {
+          font-size: 18px;
+          font-weight: 900;
+          line-height: 1.12;
+          color: #000;
+        }
+
+        .invoice-service {
+          margin-top: 0.9mm;
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(0, 0, 0, 0.8);
+        }
+
+        .invoice-summary {
+          display: grid;
+          gap: 0.55mm;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1.25;
+          color: #000;
+        }
+
+        .invoice-meta {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 2mm;
+          min-width: 0;
+          border-bottom: 1px solid #000;
+          padding-bottom: 2.3mm;
+        }
+
+        .invoice-meta-item {
+          min-width: 0;
+        }
+
+        .invoice-meta-item.center {
+          text-align: center;
+        }
+
+        .invoice-meta-item.left {
+          text-align: left;
+        }
+
+        .invoice-meta-item.right {
+          text-align: right;
+        }
+
+        .invoice-meta-label {
+          display: block;
+          margin-bottom: 0.55mm;
+          font-size: 9px;
+          font-weight: 700;
+          color: rgba(0, 0, 0, 0.72);
+        }
+
+        .invoice-meta-value {
+          display: block;
+          font-size: 11px;
+          font-weight: 900;
+          color: #000;
+        }
+
+        .invoice-detail-box {
+          display: flex;
+          min-height: 0;
+          flex: 1;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid #000;
+          border-radius: 2mm;
+          background: #fff;
+        }
+
+        .invoice-detail-title {
+          border-bottom: 1px solid #000;
+          padding: 1.8mm 0;
+          text-align: center;
+          font-size: 11px;
+          font-weight: 900;
+          color: #000;
+        }
+
+        .invoice-detail-body {
+          display: grid;
+          min-height: 0;
+          flex: 1;
+          grid-template-columns: 42mm minmax(0, 1fr);
+          overflow: hidden;
+        }
+
+        .invoice-amount-panel {
+          min-width: 0;
+          border-left: 1px solid #000;
+        }
+
+        .invoice-amount-table,
+        .invoice-detail-table {
+          width: 100%;
+          height: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+        }
+
+        .invoice-amount-table td,
+        .invoice-detail-table td {
+          overflow: hidden;
+          border-bottom: 1px solid #000;
+          padding: 1.6mm 2.2mm;
+          font-size: 10px;
+          font-weight: 800;
+          line-height: 1.2;
+          color: #000;
+          vertical-align: middle;
+          word-break: break-word;
+        }
+
+        .invoice-amount-table tr:last-child td,
+        .invoice-detail-table tr:last-child td {
+          border-bottom: 0;
+        }
+
+        .invoice-amount-label {
+          text-align: right;
+        }
+
+        .invoice-amount-value {
+          width: 24mm;
+          text-align: center;
+        }
+
+        .invoice-amount-value.is-dark {
+          background: #515151;
+          color: #fff;
+        }
+
+        .invoice-detail-label {
+          width: 30mm;
+          background: #ececec;
+          text-align: right;
+        }
+
+        .invoice-detail-value {
+          text-align: right;
+        }
+
+        .invoice-statement-value {
+          vertical-align: top;
+          line-height: 1.3;
+          overflow-wrap: anywhere;
         }
 
         @media print {
@@ -46,21 +305,26 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
             margin: 0;
             padding: 0;
             background: #ffffff !important;
-            overflow: visible;
+            overflow: hidden;
+          }
+
+          * {
+            box-sizing: border-box;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
 
-          .print-page {
+          .invoice-page {
             width: 210mm;
             min-height: 297mm;
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            overflow: hidden;
             background: #ffffff !important;
-            overflow: visible !important;
+            transform: none !important;
+            zoom: 1 !important;
+            box-shadow: none !important;
+            filter: none !important;
           }
 
           .invoice-card {
@@ -74,140 +338,67 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
             margin-bottom: 0 !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            overflow: visible !important;
+            overflow: hidden !important;
             position: static !important;
             transform: none !important;
+            zoom: 1 !important;
             box-shadow: none !important;
-            overflow: hidden !important;
+            filter: none !important;
+            border: 1px solid #000 !important;
+            border-radius: 0 !important;
             break-inside: avoid-page;
             page-break-inside: avoid;
           }
 
-          .print-invoice-shell {
-            height: 130mm !important;
-            padding: 4mm !important;
+          .invoice-shell,
+          .invoice-frame,
+          .invoice-header,
+          .invoice-meta,
+          .invoice-detail-box,
+          .invoice-detail-body,
+          .invoice-amount-panel,
+          .invoice-logo-wrap,
+          .invoice-amount-table,
+          .invoice-detail-table,
+          .invoice-amount-table tr,
+          .invoice-detail-table tr,
+          .invoice-amount-table td,
+          .invoice-detail-table td {
+            box-shadow: none !important;
+            filter: none !important;
+            transform: none !important;
           }
 
-          .print-invoice-frame {
-            height: 100% !important;
-            gap: 2.2mm !important;
-            padding: 3mm !important;
-          }
-
-          .print-invoice-header {
-            grid-template-columns: 45mm 1fr !important;
-            gap: 3mm !important;
-            padding-bottom: 2.4mm !important;
-          }
-
-          .print-logo {
-            width: 25mm !important;
-            height: 25mm !important;
-            border-width: 2px !important;
-            font-size: 12px !important;
-          }
-
-          .print-brand-name {
-            margin-top: 1.2mm !important;
-          }
-
-          .print-brand-title {
-            font-size: 12px !important;
-          }
-
-          .print-brand-subtitle {
-            font-size: 7px !important;
-            letter-spacing: 0.18em !important;
-          }
-
-          .print-heading {
-            font-size: 16px !important;
-          }
-
-          .print-service-type,
-          .print-summary,
-          .print-header-info,
-          .print-header-value,
-          .print-details-title,
-          .print-label-cell,
-          .print-value-cell,
-          .print-amount-label,
-          .print-amount-value,
-          .print-statement-value {
-            font-size: 10px !important;
-          }
-
-          .print-summary {
-            gap: 0.55mm !important;
-            line-height: 1.25 !important;
-          }
-
-          .print-header-meta {
-            padding-bottom: 2.4mm !important;
-          }
-
-          .print-header-info {
-            gap: 0.6mm !important;
-          }
-
-          .print-header-value {
-            font-size: 11px !important;
-          }
-
-          .print-details-box {
+          .invoice-frame {
+            gap: 2.1mm !important;
             overflow: hidden !important;
+            border: 1px solid #000 !important;
           }
 
-          .print-details-grid {
-            height: 100% !important;
-            grid-template-columns: 39mm 1fr !important;
+          .invoice-detail-box {
+            border: 1px solid #000 !important;
+            border-radius: 2mm !important;
           }
 
-          .print-amounts {
-            height: 100% !important;
-            display: grid !important;
-            grid-template-rows: repeat(3, 1fr) !important;
+          .invoice-amount-table,
+          .invoice-detail-table {
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
           }
 
-          .print-detail-table {
-            height: 100% !important;
-            grid-template-rows: repeat(6, 7.6mm) minmax(0, 1fr) !important;
-          }
-
-          .print-amount-row,
-          .print-detail-row,
-          .print-statement-row {
-            min-height: 0 !important;
-          }
-
-          .print-amount-label,
-          .print-amount-value {
-            padding-top: 1.7mm !important;
-            padding-bottom: 1.7mm !important;
-          }
-
-          .print-label-cell,
-          .print-value-cell,
-          .print-statement-label,
-          .print-statement-value {
-            padding-top: 1.3mm !important;
-            padding-bottom: 1.3mm !important;
-          }
-
-          .print-statement-value {
-            align-items: flex-start !important;
-            line-height: 1.3 !important;
-            overflow-wrap: anywhere !important;
+          .invoice-amount-table td,
+          .invoice-detail-table td {
+            border-bottom: 1px solid #000 !important;
           }
         }
       `}</style>
 
-      <div className="print-page mx-auto w-full max-w-[1200px] print:max-w-none">
+      <div className="invoice-page mx-auto w-full max-w-[1200px] print:max-w-none">
         <InvoicePrintActions orderId={order.id} orderCode={order.order_code} autoPrint={autoPrint} />
 
         <article
           id="invoice-document"
-          className="invoice-card mx-auto overflow-hidden rounded-[26px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:rounded-none print:border print:border-black/20"
+          className="invoice-card mx-auto overflow-hidden rounded-[14px] border border-black/15 bg-white shadow-[0_24px_80px_rgba(0,0,0,0.18)] print:rounded-none"
         >
           <InvoiceSheet
             orderCode={order.order_code}
@@ -259,35 +450,51 @@ function InvoiceSheet({
   issuedDate: string;
   issuedTime: string;
 }) {
+  const detailRows = [
+    { label: "اسم العميل", value: customerName },
+    { label: "الهاتف", value: phone },
+    { label: "العنوان", value: "-" },
+    { label: "القسم", value: serviceType },
+    { label: "تاريخ الحجز", value: bookingDate },
+    { label: "آخر تحديث", value: updatedAt },
+    { label: "البيان", value: notes || "لا توجد ملاحظات", statement: true },
+  ];
+
+  const amountRows = [
+    { label: "المبلغ الكلي", value: totalAmount, dark: true },
+    { label: "المبلغ الواصل", value: receivedAmount, dark: false },
+    { label: "المبلغ الباقي", value: remainingAmount, dark: true },
+  ];
+
   return (
-    <section className="print-invoice-shell h-full w-full bg-white p-[5mm] print:h-[130mm] print:p-[5mm]">
-      <div className="print-invoice-frame grid h-full grid-rows-[auto_auto_1fr] gap-[3mm] border border-black px-[4mm] py-[4mm] print:h-full">
-        <header className="print-invoice-header grid grid-cols-[52mm_1fr] gap-[4mm] border-b border-black pb-[3mm]">
-          <div className="flex flex-col items-start justify-between">
-            <div className="print-logo flex h-[31mm] w-[31mm] items-center justify-center rounded-full border-[3px] border-[#6f6f6f] bg-[radial-gradient(circle_at_72%_74%,#d3a330_0_26%,transparent_27%),linear-gradient(135deg,#595959_0%,#2d2d2d_65%,#0f0f0f_100%)] text-[15px] font-black tracking-[0.16em] text-white">
-              AJN
+    <section className="invoice-shell">
+      <div className="invoice-frame">
+        <header className="invoice-header">
+          <div className="invoice-logo-column">
+            <div className="invoice-logo-wrap">
+              <Image
+                src="/invoice-logo.png"
+                alt="شعار علي جان نهاد"
+                width={120}
+                height={120}
+                priority
+                unoptimized
+                className="invoice-logo-image"
+              />
             </div>
-            <div className="print-brand-name mt-[2mm] text-right">
-              <p className="print-brand-title text-[15px] font-extrabold leading-tight text-black">
-                علي جان نهاد
-              </p>
-              <p className="print-brand-subtitle text-[9px] font-semibold tracking-[0.24em] text-black/75">
-                ALI JAN NIHAD
-              </p>
+            <div className="invoice-brand">
+              <p className="invoice-brand-ar">علي جان نهاد</p>
+              <p className="invoice-brand-en">ALI JAN NIHAD</p>
             </div>
           </div>
 
-          <div className="flex flex-col justify-between text-right">
+          <div className="invoice-title-column">
             <div>
-              <h1 className="print-heading text-[20px] font-black leading-tight text-black">
-                مجموعة علي جان نهاد
-              </h1>
-              <p className="print-service-type mt-[1.4mm] text-[11px] font-semibold text-black/80">
-                {serviceType}
-              </p>
+              <h1 className="invoice-heading">مجموعة علي جان نهاد</h1>
+              <p className="invoice-service">{serviceType}</p>
             </div>
 
-            <div className="print-summary space-y-[1mm] text-[11px] font-bold leading-snug text-black">
+            <div className="invoice-summary">
               <p>حالة الطلب: {status}</p>
               <p>آخر تحديث: {updatedAt}</p>
               <p>{phone}</p>
@@ -295,33 +502,48 @@ function InvoiceSheet({
           </div>
         </header>
 
-        <section className="print-header-meta grid grid-cols-3 gap-[3mm] border-b border-black pb-[3mm] text-[11px] font-bold text-black">
-          <HeaderInfo label="التاريخ" value={issuedDate} />
-          <HeaderInfo label="رقم الفاتورة" value={orderCode} align="center" />
-          <HeaderInfo label="الوقت" value={issuedTime} align="left" />
+        <section className="invoice-meta">
+          <InvoiceMetaItem label="التاريخ" value={issuedDate} align="right" />
+          <InvoiceMetaItem label="رقم الفاتورة" value={orderCode} align="center" />
+          <InvoiceMetaItem label="الوقت" value={issuedTime} align="left" />
         </section>
 
-        <section className="print-details-box grid min-h-0 grid-rows-[auto_1fr] rounded-[5mm] border border-black">
-          <div className="print-details-title border-b border-black py-[2mm] text-center text-[12px] font-black text-black">
-            تفاصيل الحجز
-          </div>
+        <section className="invoice-detail-box">
+          <div className="invoice-detail-title">تفاصيل الحجز</div>
 
-          <div className="print-details-grid grid min-h-0 grid-cols-[44mm_1fr]">
-            <div className="print-amounts border-l border-black">
-              <AmountBlock label="المبلغ الكلي" value={totalAmount} dark />
-              <AmountBlock label="المبلغ الواصل" value={receivedAmount} />
-              <AmountBlock label="المبلغ الباقي" value={remainingAmount} dark />
+          <div className="invoice-detail-body">
+            <div className="invoice-amount-panel">
+              <table className="invoice-amount-table">
+                <tbody>
+                  {amountRows.map((row) => (
+                    <tr key={row.label}>
+                      <td className="invoice-amount-label">{row.label} :</td>
+                      <td className={`invoice-amount-value${row.dark ? " is-dark" : ""}`}>
+                        {row.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            <div className="print-detail-table grid min-h-0 grid-rows-[repeat(6,1fr)_auto]">
-              <DetailRow label="اسم العميل" value={customerName} />
-              <DetailRow label="الهاتف" value={phone} />
-              <DetailRow label="العنوان" value="-" />
-              <DetailRow label="القسم" value={serviceType} />
-              <DetailRow label="تاريخ الحجز" value={bookingDate} />
-              <DetailRow label="آخر تحديث" value={updatedAt} />
-              <StatementRow label="البيان" value={notes || "لا توجد ملاحظات"} />
-            </div>
+            <table className="invoice-detail-table">
+              <tbody>
+                {detailRows.map((row) => (
+                  <tr key={row.label}>
+                    <td className="invoice-detail-label">{row.label}:</td>
+                    <td
+                      className={[
+                        "invoice-detail-value",
+                        row.statement ? "invoice-statement-value" : "",
+                      ].join(" ")}
+                    >
+                      {row.value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>
@@ -329,7 +551,7 @@ function InvoiceSheet({
   );
 }
 
-function HeaderInfo({
+function InvoiceMetaItem({
   label,
   value,
   align = "right",
@@ -338,65 +560,12 @@ function HeaderInfo({
   value: string;
   align?: "right" | "center" | "left";
 }) {
-  const alignmentClass =
-    align === "center" ? "text-center" : align === "left" ? "text-left" : "text-right";
+  const alignmentClass = align === "center" ? "center" : align === "left" ? "left" : "right";
 
   return (
-    <div className={`print-header-info grid gap-[1mm] ${alignmentClass}`}>
-      <span className="print-header-info text-[10px] font-bold text-black/75">{label}</span>
-      <strong className="print-header-value text-[12px] font-black text-black">{value}</strong>
-    </div>
-  );
-}
-
-function AmountBlock({
-  label,
-  value,
-  dark = false,
-}: {
-  label: string;
-  value: string;
-  dark?: boolean;
-}) {
-  return (
-    <div className="print-amount-row grid grid-cols-[1fr_24mm] border-b border-black last:border-b-0">
-      <div className="print-amount-label flex items-center justify-end px-[2.6mm] py-[3.3mm] text-right text-[11px] font-black text-black">
-        {label} :
-      </div>
-      <div
-        className={[
-          "print-amount-value flex items-center justify-center px-[2mm] py-[3.3mm] text-[11px] font-black",
-          dark ? "bg-[#515151] text-white" : "bg-white text-black",
-        ].join(" ")}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="print-detail-row grid grid-cols-[30mm_1fr] border-b border-black last:border-b-0">
-      <div className="print-label-cell flex items-center justify-end bg-[#ececec] px-[2.4mm] py-[2.4mm] text-right text-[11px] font-black text-black">
-        {label}:
-      </div>
-      <div className="print-value-cell flex items-center justify-end px-[2.8mm] py-[2.4mm] text-right text-[11px] font-black text-black">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function StatementRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="print-statement-row grid grid-cols-[30mm_1fr]">
-      <div className="print-statement-label flex items-center justify-end bg-[#ececec] px-[2.4mm] py-[2.4mm] text-right text-[11px] font-black text-black">
-        {label}:
-      </div>
-      <div className="print-statement-value flex items-center justify-end px-[2.8mm] py-[2.4mm] text-right text-[11px] font-black leading-[1.55] text-black">
-        {value}
-      </div>
+    <div className={`invoice-meta-item ${alignmentClass}`}>
+      <span className="invoice-meta-label">{label}</span>
+      <strong className="invoice-meta-value">{value}</strong>
     </div>
   );
 }
