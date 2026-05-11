@@ -88,6 +88,11 @@ textarea {
   min-width: 0;
 }
 
+.no-print {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -324,6 +329,12 @@ textarea:-webkit-autofill:focus {
 
   100% {
     transform: translate3d(0, -1%, 0) scale(1.04);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
   }
 }
 

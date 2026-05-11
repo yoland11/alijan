@@ -3,6 +3,7 @@
 import { Expand, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,11 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
       return;
     }
 
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -50,19 +56,21 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [image, onClose]);
 
-  if (!image?.src) {
+  if (!image?.src || typeof document === "undefined") {
     return null;
   }
 
   const usesProxyPreviewImage = image.src.startsWith("/api/media?");
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/90 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-md sm:px-6 sm:py-8"
       onClick={onClose}
     >
       <button
@@ -75,10 +83,10 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
       </button>
 
       <div
-        className="w-full max-w-5xl overflow-hidden rounded-[28px] border border-ajn-line bg-[#070707] p-4 shadow-gold sm:p-6"
+        className="relative flex max-h-[88vh] w-full max-w-[92vw] items-center justify-center overflow-hidden rounded-[28px] border border-ajn-line bg-[#070707] p-3 shadow-gold sm:max-w-5xl sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative h-[82vh] w-full">
+        <div className="relative h-[78vh] max-h-[78vh] w-full max-w-[88vw] sm:h-[82vh] sm:max-h-[82vh]">
           <Image
             src={image.src}
             alt={image.alt}
@@ -91,7 +99,8 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
