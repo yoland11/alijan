@@ -46,6 +46,16 @@ export const SHOP_MAIN_CATEGORY_SEED = [
 
 export const SHOP_PAYMENT_METHODS = ["cash", "mastercard"] as const;
 
+export const SHOP_PRODUCT_IMAGE_FITS = ["contain", "cover", "custom"] as const;
+
+export const SHOP_PRODUCT_IMAGE_POSITIONS = [
+  "center center",
+  "center top",
+  "center bottom",
+  "right center",
+  "left center",
+] as const;
+
 export const SHOP_PAYMENT_METHOD_LABELS: Record<(typeof SHOP_PAYMENT_METHODS)[number], string> = {
   cash: "نقداً",
   mastercard: "ماستر كارد",

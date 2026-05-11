@@ -1,8 +1,15 @@
-import type { SHOP_ORDER_STATUSES, SHOP_PAYMENT_METHODS } from "@/lib/shop-constants";
+import type {
+  SHOP_ORDER_STATUSES,
+  SHOP_PAYMENT_METHODS,
+  SHOP_PRODUCT_IMAGE_FITS,
+  SHOP_PRODUCT_IMAGE_POSITIONS,
+} from "@/lib/shop-constants";
 
 export type ShopPaymentMethod = (typeof SHOP_PAYMENT_METHODS)[number];
 export type ShopOrderStatus = (typeof SHOP_ORDER_STATUSES)[number];
 export type ShopPrintStatus = "pending" | "printed" | "failed";
+export type ProductImageFit = (typeof SHOP_PRODUCT_IMAGE_FITS)[number];
+export type ProductImagePosition = (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number];
 
 export interface ServiceCategoryRecord {
   id: string;
@@ -23,6 +30,9 @@ export interface ProductRecord {
   description: string;
   price: number;
   image_url: string;
+  image_fit: ProductImageFit;
+  image_position: ProductImagePosition;
+  image_zoom: number;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -86,6 +96,9 @@ export interface ShopCartItem {
   product_id: string;
   name: string;
   image_url: string;
+  image_fit: ProductImageFit;
+  image_position: ProductImagePosition;
+  image_zoom: number;
   price: number;
   quantity: number;
 }

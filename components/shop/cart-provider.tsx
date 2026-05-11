@@ -4,6 +4,11 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { toast } from "sonner";
 
 import type { ProductRecord, ShopCartItem } from "@/lib/shop-types";
+import {
+  normalizeProductImageFit,
+  normalizeProductImagePosition,
+  normalizeProductImageZoom,
+} from "@/lib/shop-utils";
 
 const STORAGE_KEY = "ajn-shop-cart";
 
@@ -40,6 +45,9 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
               ...item,
               quantity: Math.max(1, Number(item.quantity) || 1),
               price: Number(item.price) || 0,
+              image_fit: normalizeProductImageFit(item.image_fit),
+              image_position: normalizeProductImagePosition(item.image_position),
+              image_zoom: normalizeProductImageZoom(item.image_zoom),
             })),
           );
         }
@@ -88,6 +96,9 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
               product_id: product.id,
               name: product.name,
               image_url: product.image_url,
+              image_fit: product.image_fit,
+              image_position: product.image_position,
+              image_zoom: product.image_zoom,
               price: product.price,
               quantity: nextQuantity,
             },

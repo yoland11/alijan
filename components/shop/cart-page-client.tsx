@@ -9,7 +9,7 @@ import { AnimatedServicePanel } from "@/components/ui/animated-service-panel";
 import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
 import { PreviewImage } from "@/components/ui/preview-image";
-import { buildProductImageProxyUrl } from "@/lib/shop-utils";
+import { buildProductImageProxyUrl, getProductImagePresentation } from "@/lib/shop-utils";
 import { formatAmountWithCurrency } from "@/lib/utils";
 
 export function CartPageClient() {
@@ -38,17 +38,33 @@ export function CartPageClient() {
               {items.map((item) => (
                 <div key={item.product_id} className="surface-panel p-4 sm:p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                    <PreviewImage
-                      src={buildProductImageProxyUrl(item.image_url)}
-                      alt={item.name}
-                      containerClassName="h-24 w-full rounded-2xl bg-white/[0.04] p-3 sm:w-28"
-                      imageClassName="object-contain"
-                      fallback={
-                        <div className="flex h-full items-center justify-center text-ajn-gold">
-                          <ShoppingBag className="h-8 w-8" />
-                        </div>
-                      }
-                    />
+                    {(() => {
+                      const imagePresentation = getProductImagePresentation(item);
+
+                      return (
+                        <PreviewImage
+                          src={buildProductImageProxyUrl(item.image_url)}
+                          alt={item.name}
+                          containerClassName="h-24 w-full rounded-2xl bg-white/[0.04] p-3 sm:w-28"
+                          imageStyle={{
+                            objectFit: imagePresentation.objectFit,
+                            objectPosition: imagePresentation.objectPosition,
+                            transform: imagePresentation.transform,
+                            transformOrigin: imagePresentation.transformOrigin,
+                          }}
+                          previewImageStyle={{
+                            objectFit: imagePresentation.objectFit,
+                            objectPosition: imagePresentation.objectPosition,
+                          }}
+                          imageClassName="object-contain"
+                          fallback={
+                            <div className="flex h-full items-center justify-center text-ajn-gold">
+                              <ShoppingBag className="h-8 w-8" />
+                            </div>
+                          }
+                        />
+                      );
+                    })()}
 
                     <div className="flex-1 space-y-2">
                       <h2 className="text-xl font-bold text-white">{item.name}</h2>

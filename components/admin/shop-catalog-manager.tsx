@@ -1,16 +1,25 @@
 "use client";
 
 import { Eye, EyeOff, ImagePlus, Package2, Pencil, Save, Trash2 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { ChoiceButtonGroup } from "@/components/ui/choice-button-group";
 import { Input } from "@/components/ui/input";
 import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  SHOP_PRODUCT_IMAGE_FITS,
+  SHOP_PRODUCT_IMAGE_POSITIONS,
+} from "@/lib/shop-constants";
 import type { ProductRecord, ServiceCategoryRecord, ShopSettingsRecord } from "@/lib/shop-types";
-import { buildProductImageProxyUrl } from "@/lib/shop-utils";
+import {
+  buildProductImageProxyUrl,
+  getProductImagePresentation,
+} from "@/lib/shop-utils";
 import { formatAmountInputValue, formatAmountWithCurrency } from "@/lib/utils";
 
 type CatalogTab = "categories" | "products";
@@ -32,9 +41,29 @@ const emptyProductForm = {
   description: "",
   price: "0",
   image_url: "",
+  image_fit: "contain",
+  image_position: "center center",
+  image_zoom: "1",
   is_active: true,
   sort_order: "0",
 };
+
+const productImageFitOptions: { value: (typeof SHOP_PRODUCT_IMAGE_FITS)[number]; title: string }[] = [
+  { value: "contain", title: "عرض كامل" },
+  { value: "cover", title: "ملء الإطار" },
+  { value: "custom", title: "قص مخصص" },
+];
+
+const productImagePositionOptions: {
+  value: (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number];
+  title: string;
+}[] = [
+  { value: "center top", title: "أعلى" },
+  { value: "center center", title: "وسط" },
+  { value: "center bottom", title: "أسفل" },
+  { value: "right center", title: "يمين" },
+  { value: "left center", title: "يسار" },
+];
 
 export function ShopCatalogManager() {
   const [tab, setTab] = useState<CatalogTab>("categories");
@@ -59,6 +88,21 @@ export function ShopCatalogManager() {
   );
 
   const categoryMap = useMemo(() => new Map(categories.map((item) => [item.id, item])), [categories]);
+
+  const productPreviewStyle = useMemo<CSSProperties>(() => {
+    const presentation = getProductImagePresentation({
+      image_fit: productForm.image_fit,
+      image_position: productForm.image_position,
+      image_zoom: productForm.image_zoom,
+    });
+
+    return {
+      objectFit: presentation.objectFit,
+      objectPosition: presentation.objectPosition,
+      transform: presentation.transform,
+      transformOrigin: presentation.transformOrigin,
+    };
+  }, [productForm.image_fit, productForm.image_position, productForm.image_zoom]);
 
   const loadData = async () => {
     try {
@@ -717,6 +761,77 @@ export function ShopCatalogManager() {
                 }
               />
 
+              <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold text-white">إعدادات عرض الصورة</h3>
+                  <p className="text-sm text-ajn-muted">تظهر للأدمن فقط.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-white">طريقة العرض</p>
+                  <ChoiceButtonGroup
+                    options={productImageFitOptions}
+                    value={productForm.image_fit}
+                    onChange={(value) =>
+                      setProductForm((current) => ({ ...current, image_fit: value }))
+                    }
+                    gridClassName="grid-cols-1 lg:grid-cols-3"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-white">الموقع</p>
+                  <ChoiceButtonGroup
+                    options={productImagePositionOptions}
+                    value={productForm.image_position}
+                    onChange={(value) =>
+                      setProductForm((current) => ({ ...current, image_position: value }))
+                    }
+                    gridClassName="grid-cols-2 lg:grid-cols-5"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-white">Zoom</p>
+                    <span className="text-sm font-semibold text-ajn-gold">
+                      {Number(productForm.image_zoom || 1).toFixed(1)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.5"
+                    step="0.1"
+                    value={productForm.image_zoom}
+                    onChange={(event) =>
+                      setProductForm((current) => ({ ...current, image_zoom: event.target.value }))
+                    }
+                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-[#D4AF37]"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-white">المعاينة</p>
+                  <PreviewImage
+                    src={buildProductImageProxyUrl(productForm.image_url)}
+                    alt={productForm.name || "معاينة المنتج"}
+                    containerClassName="h-56 rounded-[26px] border border-ajn-line bg-white/[0.03] p-4"
+                    imageStyle={productPreviewStyle}
+                    previewImageStyle={{
+                      objectFit: productPreviewStyle.objectFit,
+                      objectPosition: productPreviewStyle.objectPosition,
+                    }}
+                    imageClassName="object-contain"
+                    fallback={
+                      <div className="flex h-full items-center justify-center text-ajn-gold">
+                        <Package2 className="h-10 w-10" />
+                      </div>
+                    }
+                  />
+                </div>
+              </div>
+
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
                   <ImagePlus className="ml-2 h-4 w-4 text-ajn-gold" />
@@ -770,6 +885,11 @@ export function ShopCatalogManager() {
                     src={buildProductImageProxyUrl(productForm.image_url)}
                     alt="product"
                     containerClassName="h-44 rounded-3xl border border-ajn-line bg-white/[0.03] p-4"
+                    imageStyle={productPreviewStyle}
+                    previewImageStyle={{
+                      objectFit: productPreviewStyle.objectFit,
+                      objectPosition: productPreviewStyle.objectPosition,
+                    }}
                     imageClassName="object-contain"
                   />
                   <Button
@@ -788,14 +908,28 @@ export function ShopCatalogManager() {
               {(loading ? Array.from({ length: 3 }) : products).map((item, index) =>
                 loading ? (
                   <div key={index} className="surface-panel h-24 animate-pulse bg-white/[0.03]" />
-                ) : (
-                  <div key={(item as ProductRecord).id} className="surface-panel p-5">
+                ) : (() => {
+                  const productItem = item as ProductRecord;
+                  const itemImagePresentation = getProductImagePresentation(productItem);
+
+                  return (
+                  <div key={productItem.id} className="surface-panel p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                       <div className="relative">
                         <PreviewImage
-                          src={buildProductImageProxyUrl((item as ProductRecord).image_url)}
-                          alt={(item as ProductRecord).name}
+                          src={buildProductImageProxyUrl(productItem.image_url)}
+                          alt={productItem.name}
                           containerClassName="h-20 w-full rounded-2xl bg-white/[0.04] p-2 sm:w-24"
+                          imageStyle={{
+                            objectFit: itemImagePresentation.objectFit,
+                            objectPosition: itemImagePresentation.objectPosition,
+                            transform: itemImagePresentation.transform,
+                            transformOrigin: itemImagePresentation.transformOrigin,
+                          }}
+                          previewImageStyle={{
+                            objectFit: itemImagePresentation.objectFit,
+                            objectPosition: itemImagePresentation.objectPosition,
+                          }}
                           imageClassName="object-contain"
                           fallback={
                             <div className="flex h-full items-center justify-center text-ajn-gold">
@@ -803,10 +937,10 @@ export function ShopCatalogManager() {
                             </div>
                           }
                         />
-                        {(item as ProductRecord).image_url ? (
+                        {productItem.image_url ? (
                           <button
                             type="button"
-                            onClick={() => void clearProductImage(item as ProductRecord)}
+                            onClick={() => void clearProductImage(productItem)}
                             className="absolute left-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full border border-red-400/30 bg-black/75 text-red-200 transition hover:bg-red-500/20"
                             aria-label="حذف الصورة"
                           >
@@ -816,17 +950,17 @@ export function ShopCatalogManager() {
                       </div>
 
                       <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white">{(item as ProductRecord).name}</h3>
-                        {(item as ProductRecord).description ? (
+                        <h3 className="text-lg font-bold text-white">{productItem.name}</h3>
+                        {productItem.description ? (
                           <p className="mt-2 text-sm leading-6 text-ajn-muted">
-                            {(item as ProductRecord).description}
+                            {productItem.description}
                           </p>
                         ) : null}
                         <p className="mt-2 text-sm text-ajn-gold">
-                          {formatAmountWithCurrency((item as ProductRecord).price)}
+                          {formatAmountWithCurrency(productItem.price)}
                         </p>
                         <p className="mt-1 text-sm text-ajn-muted">
-                          {(categoryMap.get((item as ProductRecord).category_id)?.name) ?? "—"}
+                          {categoryMap.get(productItem.category_id)?.name ?? "—"}
                         </p>
                       </div>
 
@@ -836,14 +970,17 @@ export function ShopCatalogManager() {
                           className="px-3 py-2 text-xs"
                           onClick={() =>
                             setProductForm({
-                              id: (item as ProductRecord).id,
-                              category_id: (item as ProductRecord).category_id,
-                              name: (item as ProductRecord).name,
-                              description: (item as ProductRecord).description,
-                              price: formatAmountInputValue((item as ProductRecord).price),
-                              image_url: (item as ProductRecord).image_url,
-                              is_active: (item as ProductRecord).is_active,
-                              sort_order: String((item as ProductRecord).sort_order),
+                              id: productItem.id,
+                              category_id: productItem.category_id,
+                              name: productItem.name,
+                              description: productItem.description,
+                              price: formatAmountInputValue(productItem.price),
+                              image_url: productItem.image_url,
+                              image_fit: productItem.image_fit,
+                              image_position: productItem.image_position,
+                              image_zoom: String(productItem.image_zoom),
+                              is_active: productItem.is_active,
+                              sort_order: String(productItem.sort_order),
                             })
                           }
                         >
@@ -853,15 +990,15 @@ export function ShopCatalogManager() {
                         <Button
                           variant="secondary"
                           className="px-3 py-2 text-xs"
-                          onClick={() => toggleProduct(item as ProductRecord)}
+                          onClick={() => toggleProduct(productItem)}
                         >
-                          {(item as ProductRecord).is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          {(item as ProductRecord).is_active ? "إخفاء" : "إظهار"}
+                          {productItem.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {productItem.is_active ? "إخفاء" : "إظهار"}
                         </Button>
                         <Button
                           variant="danger"
                           className="px-3 py-2 text-xs"
-                          onClick={() => removeProduct((item as ProductRecord).id)}
+                          onClick={() => removeProduct(productItem.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                           حذف
@@ -869,7 +1006,8 @@ export function ShopCatalogManager() {
                       </div>
                     </div>
                   </div>
-                ),
+                  );
+                })(),
               )}
             </div>
           </div>

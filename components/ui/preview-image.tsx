@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { Expand, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,8 @@ interface PreviewImageProps {
   containerClassName?: string;
   imageClassName?: string;
   previewImageClassName?: string;
+  imageStyle?: CSSProperties;
+  previewImageStyle?: CSSProperties;
   fallback?: ReactNode;
   overlayLabel?: string;
   interactive?: boolean;
@@ -23,6 +25,8 @@ export function PreviewImage({
   containerClassName,
   imageClassName,
   previewImageClassName,
+  imageStyle,
+  previewImageStyle,
   fallback,
   overlayLabel = "عرض الصورة",
   interactive = true,
@@ -58,6 +62,7 @@ export function PreviewImage({
             alt={alt}
             loading="lazy"
             decoding="async"
+            style={imageStyle}
             className={cn("h-full w-full object-contain", imageClassName)}
           />
           <span className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full border border-white/10 bg-black/60 px-3 py-1 text-[11px] font-semibold text-white opacity-0 transition duration-300 group-hover:opacity-100">
@@ -77,6 +82,7 @@ export function PreviewImage({
             alt={alt}
             loading="lazy"
             decoding="async"
+            style={imageStyle}
             className={cn("h-full w-full object-contain", imageClassName)}
           />
         </div>
@@ -104,6 +110,7 @@ export function PreviewImage({
               src={src}
               alt={alt}
               decoding="async"
+              style={previewImageStyle ?? imageStyle}
               className={cn(
                 "mx-auto max-h-[82vh] w-auto max-w-full object-contain",
                 previewImageClassName,

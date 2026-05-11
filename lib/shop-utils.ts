@@ -1,5 +1,11 @@
 import { SHOP_DEFAULT_SETTINGS, SHOP_PAYMENT_METHOD_LABELS } from "@/lib/shop-constants";
+import {
+  SHOP_PRODUCT_IMAGE_FITS,
+  SHOP_PRODUCT_IMAGE_POSITIONS,
+} from "@/lib/shop-constants";
 import type {
+  ProductImageFit,
+  ProductImagePosition,
   ProductRecord,
   ServiceCategoryRecord,
   ShopCategoryNode,
@@ -84,6 +90,9 @@ export function normalizeProductRecord(raw: Record<string, unknown>): ProductRec
     description: normalizeShopText(raw.description),
     price: parseAmountValue(raw.price as string | number | null | undefined),
     image_url: normalizeShopText(raw.image_url),
+    image_fit: normalizeProductImageFit(raw.image_fit),
+    image_position: normalizeProductImagePosition(raw.image_position),
+    image_zoom: normalizeProductImageZoom(raw.image_zoom),
     is_active: normalizeBoolean(raw.is_active),
     sort_order: normalizeInteger(raw.sort_order),
     created_at: normalizeShopText(raw.created_at),
@@ -252,6 +261,56 @@ export function buildProductImageProxyUrl(imageUrl: string) {
   }
 
   return `/api/media?src=${encodeURIComponent(imageUrl)}`;
+}
+
+export function normalizeProductImageFit(value: unknown): ProductImageFit {
+  const normalized = normalizeShopText(value);
+
+  if (SHOP_PRODUCT_IMAGE_FITS.includes(normalized as ProductImageFit)) {
+    return normalized as ProductImageFit;
+  }
+
+  return "contain";
+}
+
+export function normalizeProductImagePosition(value: unknown): ProductImagePosition {
+  const normalized = normalizeShopText(value);
+
+  if (SHOP_PRODUCT_IMAGE_POSITIONS.includes(normalized as ProductImagePosition)) {
+    return normalized as ProductImagePosition;
+  }
+
+  return "center center";
+}
+
+export function normalizeProductImageZoom(value: unknown) {
+  const parsed = parseAmountValue(value as string | number | null | undefined);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+
+  return Math.min(2.5, Math.max(0.5, parsed));
+}
+
+export function getProductImagePresentation(product: {
+  image_fit?: unknown;
+  image_position?: unknown;
+  image_zoom?: unknown;
+}) {
+  const fit = normalizeProductImageFit(product.image_fit);
+  const position = normalizeProductImagePosition(product.image_position);
+  const zoom = normalizeProductImageZoom(product.image_zoom);
+
+  return {
+    fit,
+    position,
+    zoom,
+    objectFit: fit === "contain" ? "contain" : "cover",
+    objectPosition: position,
+    transform: `scale(${zoom})`,
+    transformOrigin: position,
+  } as const;
 }
 
 export function getPublicSiteUrl() {

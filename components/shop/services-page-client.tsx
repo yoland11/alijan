@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
 import { PreviewImage } from "@/components/ui/preview-image";
 import type { ProductRecord, ShopCatalogPayload, ShopCategoryNode } from "@/lib/shop-types";
-import { buildProductImageProxyUrl, findCategoryBySlug } from "@/lib/shop-utils";
+import {
+  buildProductImageProxyUrl,
+  findCategoryBySlug,
+  getProductImagePresentation,
+} from "@/lib/shop-utils";
 import { formatAmountWithCurrency } from "@/lib/utils";
 import { QuantityControl } from "@/components/shop/quantity-control";
 import { useShopCart } from "@/components/shop/cart-provider";
@@ -227,46 +231,65 @@ export function ServicesPageClient() {
 
             {currentProducts.length ? (
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {currentProducts.map((product: ProductRecord) => (
-                  <div
-                    key={product.id}
-                    className="group surface-panel glass-hover overflow-hidden [transform-style:preserve-3d]"
-                  >
-                    <PreviewImage
-                      src={buildProductImageProxyUrl(product.image_url)}
-                      alt={product.name}
-                      containerClassName="aspect-[4/3] w-full border-b border-white/6 bg-white/[0.04] p-4"
-                      imageClassName="object-contain transition duration-500 group-hover:scale-[1.04] group-hover:-rotate-[0.4deg]"
-                      fallback={
-                        <div className="flex h-full items-center justify-center text-ajn-gold">
-                          <Package2 className="h-10 w-10" />
+                {currentProducts.map((product: ProductRecord) => {
+                  const imagePresentation = getProductImagePresentation(product);
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="group surface-panel glass-hover overflow-hidden [transform-style:preserve-3d]"
+                    >
+                      <PreviewImage
+                        src={buildProductImageProxyUrl(product.image_url)}
+                        alt={product.name}
+                        containerClassName="h-[17.5rem] w-full border-b border-white/6 bg-[radial-gradient(circle_at_top,#ffffff12,transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 sm:h-[18.5rem] lg:h-[19rem]"
+                        imageClassName="transition duration-500"
+                        imageStyle={{
+                          objectFit: imagePresentation.objectFit,
+                          objectPosition: imagePresentation.objectPosition,
+                          transform: imagePresentation.transform,
+                          transformOrigin: imagePresentation.transformOrigin,
+                        }}
+                        previewImageStyle={{
+                          objectFit: imagePresentation.objectFit,
+                          objectPosition: imagePresentation.objectPosition,
+                        }}
+                        fallback={
+                          <div className="flex h-full items-center justify-center text-ajn-gold">
+                            <Package2 className="h-10 w-10" />
+                          </div>
+                        }
+                      />
+                      <div className="space-y-3 p-4 sm:p-[18px]">
+                        <div className="space-y-1.5">
+                          <h3 className="text-base font-bold text-white sm:text-lg">{product.name}</h3>
+                          {product.description ? (
+                            <p className="line-clamp-2 text-[12px] leading-5 text-ajn-muted sm:text-[13px]">
+                              {product.description}
+                            </p>
+                          ) : null}
+                          <p className="text-sm font-semibold text-ajn-gold">
+                            {formatAmountWithCurrency(product.price)}
+                          </p>
                         </div>
-                      }
-                    />
-                    <div className="space-y-4 p-5">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-bold text-white">{product.name}</h3>
-                        {product.description ? (
-                          <p className="text-sm leading-6 text-ajn-muted">{product.description}</p>
-                        ) : null}
-                        <p className="text-sm font-semibold text-ajn-gold">{formatAmountWithCurrency(product.price)}</p>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <QuantityControl
-                          className="w-full"
-                          value={getQuantity(product.id)}
-                          onChange={(value) => setQuantity(product.id, value)}
-                        />
-                        <Button
-                          className="w-full"
-                          onClick={() => addItem(product, getQuantity(product.id))}
-                        >
-                          إضافة للسلة
-                        </Button>
+                        <div className="flex flex-col gap-2.5">
+                          <QuantityControl
+                            className="w-full"
+                            size="compact"
+                            value={getQuantity(product.id)}
+                            onChange={(value) => setQuantity(product.id, value)}
+                          />
+                          <Button
+                            className="h-10 w-full rounded-2xl text-sm"
+                            onClick={() => addItem(product, getQuantity(product.id))}
+                          >
+                            إضافة للسلة
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="luxury-empty">لا توجد منتجات.</div>

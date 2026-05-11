@@ -14,7 +14,12 @@ import { Input } from "@/components/ui/input";
 import { PreviewImage } from "@/components/ui/preview-image";
 import { Textarea } from "@/components/ui/textarea";
 import type { ShopSettingsRecord, ShopPaymentMethod } from "@/lib/shop-types";
-import { buildGoogleMapsUrl, buildProductImageProxyUrl, getShopPaymentMethodLabel } from "@/lib/shop-utils";
+import {
+  buildGoogleMapsUrl,
+  buildProductImageProxyUrl,
+  getProductImagePresentation,
+  getShopPaymentMethodLabel,
+} from "@/lib/shop-utils";
 import { formatAmountWithCurrency } from "@/lib/utils";
 
 const defaultSettings: ShopSettingsRecord = {
@@ -298,17 +303,33 @@ export function CheckoutPageClient() {
               <div className="space-y-4">
                 {items.map((item) => (
                   <div key={item.product_id} className="flex items-center gap-3 rounded-2xl border border-white/6 bg-black/20 p-3">
-                    <PreviewImage
-                      src={buildProductImageProxyUrl(item.image_url)}
-                      alt={item.name}
-                      containerClassName="h-16 w-16 rounded-2xl bg-white/[0.04] p-2"
-                      imageClassName="object-contain"
-                      fallback={
-                        <div className="flex h-full items-center justify-center text-ajn-gold">
-                          <ShoppingBag className="h-6 w-6" />
-                        </div>
-                      }
-                    />
+                    {(() => {
+                      const imagePresentation = getProductImagePresentation(item);
+
+                      return (
+                        <PreviewImage
+                          src={buildProductImageProxyUrl(item.image_url)}
+                          alt={item.name}
+                          containerClassName="h-16 w-16 rounded-2xl bg-white/[0.04] p-2"
+                          imageStyle={{
+                            objectFit: imagePresentation.objectFit,
+                            objectPosition: imagePresentation.objectPosition,
+                            transform: imagePresentation.transform,
+                            transformOrigin: imagePresentation.transformOrigin,
+                          }}
+                          previewImageStyle={{
+                            objectFit: imagePresentation.objectFit,
+                            objectPosition: imagePresentation.objectPosition,
+                          }}
+                          imageClassName="object-contain"
+                          fallback={
+                            <div className="flex h-full items-center justify-center text-ajn-gold">
+                              <ShoppingBag className="h-6 w-6" />
+                            </div>
+                          }
+                        />
+                      );
+                    })()}
                     <div className="flex-1">
                       <p className="font-semibold text-white">{item.name}</p>
                       <p className="text-sm text-ajn-muted">x{item.quantity}</p>

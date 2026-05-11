@@ -4,6 +4,8 @@ import {
   SHOP_DEFAULT_SETTINGS,
   SHOP_ORDER_STATUSES,
   SHOP_PAYMENT_METHODS,
+  SHOP_PRODUCT_IMAGE_FITS,
+  SHOP_PRODUCT_IMAGE_POSITIONS,
 } from "@/lib/shop-constants";
 import { buildGoogleMapsUrl, normalizeGoogleMapsUrl, slugifyStoreText } from "@/lib/shop-utils";
 import { normalizeArabicDigits, normalizePhone, parseAmountValue } from "@/lib/utils";
@@ -50,6 +52,40 @@ const booleanField = z
     return value === 1;
   });
 
+const imageFitField = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : "contain"))
+  .transform((value) =>
+    SHOP_PRODUCT_IMAGE_FITS.includes(value as (typeof SHOP_PRODUCT_IMAGE_FITS)[number])
+      ? (value as (typeof SHOP_PRODUCT_IMAGE_FITS)[number])
+      : "contain",
+  );
+
+const imagePositionField = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : "center center"))
+  .transform((value) =>
+    SHOP_PRODUCT_IMAGE_POSITIONS.includes(value as (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number])
+      ? (value as (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number])
+      : "center center",
+  );
+
+const imageZoomField = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => {
+    if (value === null || value === undefined || value === "") {
+      return 1;
+    }
+
+    const parsed = parseAmountValue(value);
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 1;
+    }
+
+    return Math.min(2.5, Math.max(0.5, parsed));
+  });
+
 export const serviceCategorySchema = z.object({
   name: z.string().min(1, "اسم القسم مطلوب."),
   slug: textField,
@@ -69,6 +105,9 @@ export const productSchema = z.object({
   description: textField,
   price: amountField,
   image_url: textField,
+  image_fit: imageFitField.default("contain"),
+  image_position: imagePositionField.default("center center"),
+  image_zoom: imageZoomField.default(1),
   is_active: booleanField.default(true),
   sort_order: sortOrderField.default(0),
 });
@@ -180,6 +219,9 @@ export function normalizeShopOptionalTextPayload<T extends Record<string, unknow
     slug: body.slug ?? "",
     parent_id: body.parent_id ?? "",
     image_url: body.image_url ?? "",
+    image_fit: body.image_fit ?? "contain",
+    image_position: body.image_position ?? "center center",
+    image_zoom: body.image_zoom ?? 1,
     description: body.description ?? "",
     mastercard_qr_url: body.mastercard_qr_url ?? "",
     driver_notes: body.driver_notes ?? "",
