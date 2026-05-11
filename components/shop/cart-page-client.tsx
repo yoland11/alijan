@@ -43,7 +43,8 @@ export function CartPageClient() {
 
                       return (
                         <PreviewImage
-                          src={buildProductImageProxyUrl(item.image_url)}
+                          src={buildProductImageProxyUrl(item.thumbnail_url || item.image_url)}
+                          previewSrc={buildProductImageProxyUrl(item.image_url)}
                           alt={item.name}
                           containerClassName="h-24 w-full rounded-2xl bg-white/[0.04] p-3 sm:w-28"
                           imageStyle={{

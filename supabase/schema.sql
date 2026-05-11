@@ -84,6 +84,7 @@ create table if not exists public.service_categories (
   slug text not null unique,
   parent_id uuid references public.service_categories(id) on delete cascade,
   image_url text not null default ''::text,
+  thumbnail_url text not null default ''::text,
   is_active boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default timezone('utc', now()),
@@ -97,6 +98,7 @@ create table if not exists public.products (
   description text not null default ''::text,
   price numeric(12,2) not null default 0,
   image_url text not null default ''::text,
+  thumbnail_url text not null default ''::text,
   image_fit text not null default 'contain'::text,
   image_position text not null default 'center center'::text,
   image_zoom numeric(6,2) not null default 1,
@@ -107,9 +109,13 @@ create table if not exists public.products (
 );
 
 alter table public.products
+  add column if not exists thumbnail_url text not null default '',
   add column if not exists image_fit text not null default 'contain',
   add column if not exists image_position text not null default 'center center',
   add column if not exists image_zoom numeric(6,2) not null default 1;
+
+alter table public.service_categories
+  add column if not exists thumbnail_url text not null default '';
 
 create table if not exists public.shop_orders (
   id uuid primary key default gen_random_uuid(),

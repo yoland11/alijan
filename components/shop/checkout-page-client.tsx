@@ -308,7 +308,8 @@ export function CheckoutPageClient() {
 
                       return (
                         <PreviewImage
-                          src={buildProductImageProxyUrl(item.image_url)}
+                          src={buildProductImageProxyUrl(item.thumbnail_url || item.image_url)}
+                          previewSrc={buildProductImageProxyUrl(item.image_url)}
                           alt={item.name}
                           containerClassName="h-16 w-16 rounded-2xl bg-white/[0.04] p-2"
                           imageStyle={{

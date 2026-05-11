@@ -19,6 +19,11 @@ const remotePatterns =
 
 const nextConfig: NextConfig = {
   images: {
+    localPatterns: [
+      {
+        pathname: "/api/media",
+      },
+    ],
     remotePatterns,
   },
 };

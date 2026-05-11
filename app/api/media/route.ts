@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     return new Response(arrayBuffer, {
       headers: {
         "Content-Type": data.type || "application/octet-stream",
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        "Cache-Control": "public, max-age=31536000, s-maxage=31536000, immutable",
       },
     });
   } catch (error) {

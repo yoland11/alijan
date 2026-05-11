@@ -35,11 +35,17 @@ export async function POST(request: Request) {
         uploadKind === "research-pdf" ? ["application/pdf"] : undefined,
       allowedExtensions: uploadKind === "research-pdf" ? ["pdf"] : undefined,
       maxSizeInMb: uploadKind === "research-pdf" ? 20 : 15,
+      optimizeImages: uploadKind !== "research-pdf",
+      createThumbnail: uploadKind === "product-image",
+      maxWidth: 1200,
+      quality: 78,
+      thumbnailWidth: 420,
     });
 
     return NextResponse.json({
       urls: uploadedFiles.map((file) => file.url),
-      files: uploadedFiles.map(({ name, url }) => ({ name, url })),
+      thumbnailUrls: uploadedFiles.map((file) => file.thumbnailUrl || file.url),
+      files: uploadedFiles.map(({ name, url, thumbnailUrl }) => ({ name, url, thumbnailUrl })),
     });
   } catch (error) {
     return NextResponse.json(
@@ -57,14 +63,16 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { src?: string };
+    const body = (await request.json()) as { src?: string; srcs?: string[] };
     const src = body.src?.trim() ?? "";
+    const srcs = (body.srcs ?? []).map((item) => item.trim()).filter(Boolean);
+    const targets = src ? [src, ...srcs] : srcs;
 
-    if (!src) {
+    if (!targets.length) {
       return NextResponse.json({ message: "رابط الصورة غير صالح." }, { status: 400 });
     }
 
-    const result = await deleteFileFromStorage(src);
+    const result = await deleteFileFromStorage(targets);
 
     return NextResponse.json({
       message: result.warning || "تم حذف الصورة.",

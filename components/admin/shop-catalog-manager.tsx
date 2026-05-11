@@ -30,6 +30,7 @@ const emptyCategoryForm = {
   slug: "",
   parent_id: "",
   image_url: "",
+  thumbnail_url: "",
   is_active: true,
   sort_order: "0",
 };
@@ -41,6 +42,7 @@ const emptyProductForm = {
   description: "",
   price: "0",
   image_url: "",
+  thumbnail_url: "",
   image_fit: "contain",
   image_position: "center center",
   image_zoom: "1",
@@ -137,13 +139,13 @@ export function ShopCatalogManager() {
     return () => window.clearTimeout(timeout);
   }, []);
 
-  const deleteStoredImage = async (src: string) => {
+  const deleteStoredImage = async (src: string | string[]) => {
     const response = await fetch("/api/admin/media", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ src }),
+      body: JSON.stringify(Array.isArray(src) ? { srcs: src } : { src }),
     });
     const payload = (await response.json()) as { message?: string; warning?: string | null };
 
@@ -157,6 +159,7 @@ export function ShopCatalogManager() {
   const uploadImage = async (file: File, kind: "category" | "product") => {
     const formData = new FormData();
     formData.append("files", file);
+    const loadingToast = toast.loading("جاري تحسين الصورة...");
 
     if (kind === "category") {
       setUploadingCategoryImage(true);
@@ -169,27 +172,43 @@ export function ShopCatalogManager() {
         method: "POST",
         body: formData,
       });
-      const payload = (await response.json()) as { message?: string; urls?: string[] };
+      const payload = (await response.json()) as {
+        message?: string;
+        urls?: string[];
+        thumbnailUrls?: string[];
+        files?: { url: string; thumbnailUrl?: string }[];
+      };
 
       if (!response.ok) {
         throw new Error(payload.message || "تعذر رفع الصورة.");
       }
 
       const uploadedUrl = payload.urls?.[0] ?? "";
+      const uploadedThumbnail =
+        payload.files?.[0]?.thumbnailUrl ?? payload.thumbnailUrls?.[0] ?? uploadedUrl;
       if (!uploadedUrl) {
         throw new Error("تعذر رفع الصورة.");
       }
 
       if (kind === "category") {
-        setCategoryForm((current) => ({ ...current, image_url: uploadedUrl }));
+        setCategoryForm((current) => ({
+          ...current,
+          image_url: uploadedUrl,
+          thumbnail_url: uploadedThumbnail,
+        }));
       } else {
-        setProductForm((current) => ({ ...current, image_url: uploadedUrl }));
+        setProductForm((current) => ({
+          ...current,
+          image_url: uploadedUrl,
+          thumbnail_url: uploadedThumbnail,
+        }));
       }
 
-      toast.success("تم رفع الصورة.");
+      toast.success("تم رفع الصورة وتحسينها.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر رفع الصورة.");
     } finally {
+      toast.dismiss(loadingToast);
       if (kind === "category") {
         setUploadingCategoryImage(false);
       } else {
@@ -354,6 +373,7 @@ export function ShopCatalogManager() {
         body: JSON.stringify({
           ...category,
           image_url: "",
+          thumbnail_url: "",
         }),
       });
       const payload = (await response.json()) as { message?: string };
@@ -363,13 +383,15 @@ export function ShopCatalogManager() {
       }
 
       setCategories((current) =>
-        current.map((item) => (item.id === category.id ? { ...item, image_url: "" } : item)),
+        current.map((item) =>
+          item.id === category.id ? { ...item, image_url: "", thumbnail_url: "" } : item,
+        ),
       );
       setCategoryForm((current) =>
-        current.id === category.id ? { ...current, image_url: "" } : current,
+        current.id === category.id ? { ...current, image_url: "", thumbnail_url: "" } : current,
       );
 
-      const warning = await deleteStoredImage(category.image_url);
+      const warning = await deleteStoredImage([category.image_url, category.thumbnail_url].filter(Boolean));
       toast.success("تم حذف الصورة بنجاح");
 
       if (warning) {
@@ -394,6 +416,7 @@ export function ShopCatalogManager() {
         body: JSON.stringify({
           ...product,
           image_url: "",
+          thumbnail_url: "",
         }),
       });
       const payload = (await response.json()) as { message?: string };
@@ -403,13 +426,15 @@ export function ShopCatalogManager() {
       }
 
       setProducts((current) =>
-        current.map((item) => (item.id === product.id ? { ...item, image_url: "" } : item)),
+        current.map((item) =>
+          item.id === product.id ? { ...item, image_url: "", thumbnail_url: "" } : item,
+        ),
       );
       setProductForm((current) =>
-        current.id === product.id ? { ...current, image_url: "" } : current,
+        current.id === product.id ? { ...current, image_url: "", thumbnail_url: "" } : current,
       );
 
-      const warning = await deleteStoredImage(product.image_url);
+      const warning = await deleteStoredImage([product.image_url, product.thumbnail_url].filter(Boolean));
       toast.success("تم حذف الصورة بنجاح");
 
       if (warning) {
@@ -437,6 +462,7 @@ export function ShopCatalogManager() {
           body: JSON.stringify({
             ...categoryForm,
             image_url: "",
+            thumbnail_url: "",
           }),
         });
         const payload = (await response.json()) as { message?: string };
@@ -446,14 +472,14 @@ export function ShopCatalogManager() {
         }
       }
 
-      setCategoryForm((current) => ({ ...current, image_url: "" }));
+      setCategoryForm((current) => ({ ...current, image_url: "", thumbnail_url: "" }));
       setCategories((current) =>
         current.map((item) =>
-          item.id === categoryForm.id ? { ...item, image_url: "" } : item,
+          item.id === categoryForm.id ? { ...item, image_url: "", thumbnail_url: "" } : item,
         ),
       );
 
-      const warning = await deleteStoredImage(previousUrl);
+      const warning = await deleteStoredImage([previousUrl, categoryForm.thumbnail_url].filter(Boolean));
       toast.success("تم حذف الصورة بنجاح");
 
       if (warning) {
@@ -483,6 +509,7 @@ export function ShopCatalogManager() {
           body: JSON.stringify({
             ...productForm,
             image_url: "",
+            thumbnail_url: "",
           }),
         });
         const payload = (await response.json()) as { message?: string };
@@ -492,14 +519,14 @@ export function ShopCatalogManager() {
         }
       }
 
-      setProductForm((current) => ({ ...current, image_url: "" }));
+      setProductForm((current) => ({ ...current, image_url: "", thumbnail_url: "" }));
       setProducts((current) =>
         current.map((item) =>
-          item.id === productForm.id ? { ...item, image_url: "" } : item,
+          item.id === productForm.id ? { ...item, image_url: "", thumbnail_url: "" } : item,
         ),
       );
 
-      const warning = await deleteStoredImage(previousUrl);
+      const warning = await deleteStoredImage([previousUrl, productForm.thumbnail_url].filter(Boolean));
       toast.success("تم حذف الصورة بنجاح");
 
       if (warning) {
@@ -566,7 +593,7 @@ export function ShopCatalogManager() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
                   <ImagePlus className="ml-2 h-4 w-4 text-ajn-gold" />
-                  {uploadingCategoryImage ? "جاري الرفع..." : "رفع صورة"}
+                  {uploadingCategoryImage ? "جاري تحسين الصورة..." : "رفع صورة"}
                   <input
                     type="file"
                     accept="image/*"
@@ -639,7 +666,11 @@ export function ShopCatalogManager() {
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                       <div className="relative">
                         <PreviewImage
-                          src={buildProductImageProxyUrl((item as ServiceCategoryRecord).image_url)}
+                          src={buildProductImageProxyUrl(
+                            (item as ServiceCategoryRecord).thumbnail_url ||
+                              (item as ServiceCategoryRecord).image_url,
+                          )}
+                          previewSrc={buildProductImageProxyUrl((item as ServiceCategoryRecord).image_url)}
                           alt={(item as ServiceCategoryRecord).name}
                           containerClassName="h-20 w-full rounded-2xl bg-white/[0.04] p-2 sm:w-24"
                           imageClassName="object-contain"
@@ -683,6 +714,7 @@ export function ShopCatalogManager() {
                               slug: (item as ServiceCategoryRecord).slug,
                               parent_id: (item as ServiceCategoryRecord).parent_id ?? "",
                               image_url: (item as ServiceCategoryRecord).image_url,
+                              thumbnail_url: (item as ServiceCategoryRecord).thumbnail_url,
                               is_active: (item as ServiceCategoryRecord).is_active,
                               sort_order: String((item as ServiceCategoryRecord).sort_order),
                             })
@@ -835,7 +867,7 @@ export function ShopCatalogManager() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
                   <ImagePlus className="ml-2 h-4 w-4 text-ajn-gold" />
-                  {uploadingProductImage ? "جاري الرفع..." : "رفع صورة"}
+                  {uploadingProductImage ? "جاري تحسين الصورة..." : "رفع صورة"}
                   <input
                     type="file"
                     accept="image/*"
@@ -917,7 +949,8 @@ export function ShopCatalogManager() {
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                       <div className="relative">
                         <PreviewImage
-                          src={buildProductImageProxyUrl(productItem.image_url)}
+                          src={buildProductImageProxyUrl(productItem.thumbnail_url || productItem.image_url)}
+                          previewSrc={buildProductImageProxyUrl(productItem.image_url)}
                           alt={productItem.name}
                           containerClassName="h-20 w-full rounded-2xl bg-white/[0.04] p-2 sm:w-24"
                           imageStyle={{
@@ -976,6 +1009,7 @@ export function ShopCatalogManager() {
                               description: productItem.description,
                               price: formatAmountInputValue(productItem.price),
                               image_url: productItem.image_url,
+                              thumbnail_url: productItem.thumbnail_url,
                               image_fit: productItem.image_fit,
                               image_position: productItem.image_position,
                               image_zoom: String(productItem.image_zoom),

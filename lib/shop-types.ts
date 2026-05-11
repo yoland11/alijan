@@ -17,6 +17,7 @@ export interface ServiceCategoryRecord {
   slug: string;
   parent_id: string | null;
   image_url: string;
+  thumbnail_url: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -30,6 +31,7 @@ export interface ProductRecord {
   description: string;
   price: number;
   image_url: string;
+  thumbnail_url: string;
   image_fit: ProductImageFit;
   image_position: ProductImagePosition;
   image_zoom: number;
@@ -96,6 +98,7 @@ export interface ShopCartItem {
   product_id: string;
   name: string;
   image_url: string;
+  thumbnail_url: string;
   image_fit: ProductImageFit;
   image_position: ProductImagePosition;
   image_zoom: number;

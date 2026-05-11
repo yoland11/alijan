@@ -91,12 +91,14 @@ export const serviceCategorySchema = z.object({
   slug: textField,
   parent_id: textField,
   image_url: textField,
+  thumbnail_url: textField,
   is_active: booleanField.default(true),
   sort_order: sortOrderField.default(0),
 }).transform((value) => ({
   ...value,
   slug: value.slug || slugifyStoreText(value.name),
   parent_id: value.parent_id || null,
+  thumbnail_url: value.thumbnail_url || value.image_url || "",
 }));
 
 export const productSchema = z.object({
@@ -105,12 +107,16 @@ export const productSchema = z.object({
   description: textField,
   price: amountField,
   image_url: textField,
+  thumbnail_url: textField,
   image_fit: imageFitField.default("contain"),
   image_position: imagePositionField.default("center center"),
   image_zoom: imageZoomField.default(1),
   is_active: booleanField.default(true),
   sort_order: sortOrderField.default(0),
-});
+}).transform((value) => ({
+  ...value,
+  thumbnail_url: value.thumbnail_url || value.image_url || "",
+}));
 
 export const shopSettingsSchema = z.object({
   mastercard_qr_url: textField,
@@ -219,6 +225,7 @@ export function normalizeShopOptionalTextPayload<T extends Record<string, unknow
     slug: body.slug ?? "",
     parent_id: body.parent_id ?? "",
     image_url: body.image_url ?? "",
+    thumbnail_url: body.thumbnail_url ?? "",
     image_fit: body.image_fit ?? "contain",
     image_position: body.image_position ?? "center center",
     image_zoom: body.image_zoom ?? 1,
