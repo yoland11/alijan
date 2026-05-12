@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  PORTFOLIO_CATEGORIES,
   SHOP_DEFAULT_SETTINGS,
   SHOP_ORDER_STATUSES,
   SHOP_PAYMENT_METHODS,
@@ -13,6 +14,9 @@ import {
   getShopProductColorByHex,
   getShopProductColorByName,
   normalizeGoogleMapsUrl,
+  normalizeProductCustomizationOptions,
+  normalizeProductCustomizationPayload,
+  normalizeProductPreviewImages,
   slugifyStoreText,
 } from "@/lib/shop-utils";
 import { normalizeArabicDigits, normalizePhone, parseAmountValue } from "@/lib/utils";
@@ -23,12 +27,28 @@ const textField = z
 
 const requiredTextField = z
   .union([z.string(), z.null(), z.undefined()])
-  .transform((value) => (typeof value === "string" ? value.trim() : ""));
+  .transform((value) => (typeof value === "string" ? value.trim() : ""))
+  .refine((value) => value.length > 0, "هذا الحقل مطلوب.");
 
 const amountField = z
-  .union([z.string(), z.number()])
+  .union([z.string(), z.number(), z.null(), z.undefined()])
   .transform((value) => parseAmountValue(value))
   .refine((value) => value >= 0, "يرجى إدخال مبلغ صحيح.");
+
+const nullableIntegerField = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value) => {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : null;
+    }
+
+    const parsed = Number.parseInt(normalizeArabicDigits(value).replace(/[^\d-]/g, ""), 10);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+  });
 
 const sortOrderField = z
   .union([z.string(), z.number(), z.undefined(), z.null()])
@@ -85,7 +105,6 @@ const imageZoomField = z
     }
 
     const parsed = parseAmountValue(value);
-
     if (!Number.isFinite(parsed) || parsed <= 0) {
       return 1;
     }
@@ -121,69 +140,101 @@ const previewImageSchema = z.object({
   is_primary: booleanField.default(false),
 });
 
-export const serviceCategorySchema = z.object({
-  name: z.string().min(1, "اسم القسم مطلوب."),
-  slug: textField,
-  parent_id: textField,
-  image_url: textField,
-  thumbnail_url: textField,
-  is_active: booleanField.default(true),
+const deliveryRegionSchema = z.object({
+  id: textField,
+  province: requiredTextField,
+  fee: amountField.default(0),
+  eta_text: requiredTextField,
+  delivery_type: requiredTextField,
   sort_order: sortOrderField.default(0),
-}).transform((value) => ({
-  ...value,
-  slug: value.slug || slugifyStoreText(value.name),
-  parent_id: value.parent_id || null,
-  thumbnail_url: value.thumbnail_url || value.image_url || "",
-}));
+  is_active: booleanField.default(true),
+});
 
-export const productSchema = z.object({
-  category_id: z.string().min(1, "يرجى اختيار القسم."),
-  name: z.string().min(1, "اسم المنتج مطلوب."),
-  description: textField,
-  price: amountField,
-  image_url: textField,
-  thumbnail_url: textField,
-  image_fit: imageFitField.default("contain"),
-  image_position: imagePositionField.default("center center"),
-  image_zoom: imageZoomField.default(1),
-  color_options: z.array(productColorOptionSchema).optional().default([]),
-  preview_images: z.array(previewImageSchema).optional().default([]),
-  is_active: booleanField.default(true),
-  sort_order: sortOrderField.default(0),
-}).transform((value) => ({
-  ...value,
-  thumbnail_url: value.thumbnail_url || value.image_url || "",
-  color_options: value.color_options
-    .map((item) => getShopProductColorByHex(item.color_hex) ?? getShopProductColorByName(item.color_name))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((item, index) => ({
-      id: item.id,
-      color_name: item.color_name,
-      color_hex: item.color_hex,
-      sort_order: index,
-    })),
-  preview_images: value.preview_images
-    .filter((item) => item.url)
-    .map((item, index) => ({
-      ...item,
-      id: item.id || crypto.randomUUID(),
-      thumbnail_url: item.thumbnail_url || item.url,
-      sort_order: index,
-      is_primary: Boolean(item.is_primary),
-    }))
-    .map((item, index, array) => ({
-      ...item,
-      is_primary: array.some((entry) => entry.is_primary) ? item.is_primary : index === 0,
-    })),
-}));
+const customizationOptionsSchema = z.object({
+  enable_name: booleanField.default(false),
+  enable_message: booleanField.default(false),
+  enable_wrapping_note: booleanField.default(false),
+  enable_special_color: booleanField.default(false),
+  enable_occasion_date: booleanField.default(false),
+  enable_customer_image: booleanField.default(false),
+});
+
+const customizationPayloadSchema = z.object({
+  custom_name: textField,
+  gift_message: textField,
+  wrapping_note: textField,
+  special_color: textField,
+  occasion_date: textField,
+  customer_image_url: textField,
+});
+
+export const serviceCategorySchema = z
+  .object({
+    name: z.string().min(1, "اسم القسم مطلوب."),
+    slug: textField,
+    parent_id: textField,
+    image_url: textField,
+    thumbnail_url: textField,
+    is_active: booleanField.default(true),
+    sort_order: sortOrderField.default(0),
+  })
+  .transform((value) => ({
+    ...value,
+    slug: value.slug || slugifyStoreText(value.name),
+    parent_id: value.parent_id || null,
+    thumbnail_url: value.thumbnail_url || value.image_url || "",
+  }));
+
+export const productSchema = z
+  .object({
+    category_id: z.string().min(1, "يرجى اختيار القسم."),
+    name: z.string().min(1, "اسم المنتج مطلوب."),
+    description: textField,
+    price: amountField,
+    image_url: textField,
+    thumbnail_url: textField,
+    image_fit: imageFitField.default("contain"),
+    image_position: imagePositionField.default("center center"),
+    image_zoom: imageZoomField.default(1),
+    color_options: z.array(productColorOptionSchema).optional().default([]),
+    preview_images: z.array(previewImageSchema).optional().default([]),
+    video_url: textField,
+    stock_quantity: nullableIntegerField,
+    customization_options: customizationOptionsSchema.optional().default({
+      enable_name: false,
+      enable_message: false,
+      enable_wrapping_note: false,
+      enable_special_color: false,
+      enable_occasion_date: false,
+      enable_customer_image: false,
+    }),
+    is_active: booleanField.default(true),
+    sort_order: sortOrderField.default(0),
+  })
+  .transform((value) => ({
+    ...value,
+    thumbnail_url: value.thumbnail_url || value.image_url || "",
+    color_options: value.color_options
+      .map((item) => getShopProductColorByHex(item.color_hex) ?? getShopProductColorByName(item.color_name))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((item, index) => ({
+        id: item.id,
+        color_name: item.color_name,
+        color_hex: item.color_hex,
+        sort_order: index,
+      })),
+    preview_images: normalizeProductPreviewImages(value.preview_images),
+    customization_options: normalizeProductCustomizationOptions(value.customization_options),
+  }));
 
 export const shopSettingsSchema = z.object({
   mastercard_qr_url: textField,
   wrapping_price: amountField.default(SHOP_DEFAULT_SETTINGS.wrapping_price),
   delivery_fee: amountField.default(SHOP_DEFAULT_SETTINGS.delivery_fee),
-  delivery_time_text: requiredTextField.refine((value) => value.length > 0, "وقت التوصيل مطلوب."),
+  delivery_time_text: requiredTextField,
+  delivery_regions: z.array(deliveryRegionSchema).optional().default([]),
 });
 
 export const shopOrderStatusSchema = z.object({
@@ -194,11 +245,7 @@ export const shopOrderStatusSchema = z.object({
 
 export const shopOrderAdminUpdateSchema = z
   .object({
-    status: z
-      .enum(SHOP_ORDER_STATUSES, {
-        error: "يرجى اختيار الحالة.",
-      })
-      .optional(),
+    status: z.enum(SHOP_ORDER_STATUSES).optional(),
     print_status: z.enum(["pending", "printed", "failed"]).optional(),
     printed_at: z.string().nullable().optional(),
     reset_printed_at: booleanField.optional(),
@@ -231,6 +278,14 @@ export const checkoutItemSchema = z.object({
     (value) => value === "" || SHOP_PRODUCT_COLOR_LIBRARY.some((item) => item.color_hex === value),
     "لون المنتج غير صالح.",
   ),
+  customization: customizationPayloadSchema.optional().default({
+    custom_name: "",
+    gift_message: "",
+    wrapping_note: "",
+    special_color: "",
+    occasion_date: "",
+    customer_image_url: "",
+  }),
 });
 
 export const checkoutOrderSchema = z
@@ -241,7 +296,8 @@ export const checkoutOrderSchema = z
       .min(8, "رقم الهاتف غير صالح.")
       .transform((value) => normalizePhone(value))
       .refine((value) => value.length >= 8, "رقم الهاتف غير صالح."),
-    city: z.string().min(1, "المحافظة / المدينة مطلوبة."),
+    province: requiredTextField.refine((value) => value.length > 0, "المحافظة مطلوبة."),
+    district: requiredTextField.refine((value) => value.length > 0, "المدينة / المنطقة مطلوبة."),
     address: z.string().min(1, "العنوان مطلوب."),
     driver_notes: textField,
     location_lat: z
@@ -269,14 +325,33 @@ export const checkoutOrderSchema = z
       error: "يرجى اختيار طريقة الدفع.",
     }),
     wrapping_enabled: booleanField.default(false),
+    delivery_type: textField,
+    delivery_eta: textField,
     items: z.array(checkoutItemSchema).min(1, "السلة فارغة."),
   })
   .transform((value) => ({
     ...value,
+    city: value.province,
     google_maps_url:
       normalizeGoogleMapsUrl(value.google_maps_url) ||
       buildGoogleMapsUrl(value.location_lat, value.location_lng),
+    items: value.items.map((item) => ({
+      ...item,
+      customization: normalizeProductCustomizationPayload(item.customization),
+    })),
   }));
+
+export const portfolioEntrySchema = z.object({
+  title: z.string().min(1, "العنوان مطلوب."),
+  category: z.enum(PORTFOLIO_CATEGORIES, {
+    error: "يرجى اختيار التصنيف.",
+  }),
+  media_type: z.enum(["image", "video"]),
+  media_url: requiredTextField,
+  thumbnail_url: textField,
+  is_active: booleanField.default(true),
+  sort_order: sortOrderField.default(0),
+});
 
 export type ServiceCategorySchema = z.infer<typeof serviceCategorySchema>;
 export type ProductSchema = z.infer<typeof productSchema>;
@@ -284,6 +359,7 @@ export type ShopSettingsSchema = z.infer<typeof shopSettingsSchema>;
 export type ShopOrderStatusSchema = z.infer<typeof shopOrderStatusSchema>;
 export type ShopOrderAdminUpdateSchema = z.infer<typeof shopOrderAdminUpdateSchema>;
 export type CheckoutOrderSchema = z.infer<typeof checkoutOrderSchema>;
+export type PortfolioEntrySchema = z.infer<typeof portfolioEntrySchema>;
 
 export function normalizeShopOptionalTextPayload<T extends Record<string, unknown>>(body: T) {
   return {
@@ -297,9 +373,25 @@ export function normalizeShopOptionalTextPayload<T extends Record<string, unknow
     image_zoom: body.image_zoom ?? 1,
     color_options: Array.isArray(body.color_options) ? body.color_options : [],
     preview_images: Array.isArray(body.preview_images) ? body.preview_images : [],
+    customization_options:
+      typeof body.customization_options === "object" && body.customization_options !== null
+        ? body.customization_options
+        : {},
+    customization:
+      typeof body.customization === "object" && body.customization !== null ? body.customization : {},
+    delivery_regions: Array.isArray(body.delivery_regions) ? body.delivery_regions : [],
     description: body.description ?? "",
     mastercard_qr_url: body.mastercard_qr_url ?? "",
     driver_notes: body.driver_notes ?? "",
     google_maps_url: body.google_maps_url ?? "",
+    video_url: body.video_url ?? "",
+    stock_quantity: body.stock_quantity ?? null,
+    delivery_type: body.delivery_type ?? "",
+    delivery_eta: body.delivery_eta ?? "",
+    province: body.province ?? "",
+    district: body.district ?? "",
+    city: body.city ?? "",
+    comment: body.comment ?? "",
+    image_url_review: body.image_url_review ?? "",
   };
 }

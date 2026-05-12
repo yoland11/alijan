@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { ShopOrderProgressBar, ShopOrderStatusBadge, ShopStatusTimeline } from "@/components/shop/shop-status-timeline";
 import type { ShopOrderRecord } from "@/lib/shop-types";
-import { getShopPaymentMethodLabel } from "@/lib/shop-utils";
+import { getCustomizationSummaryEntries, getShopPaymentMethodLabel } from "@/lib/shop-utils";
 import { cn, formatAmountWithCurrency, formatDateTime, maskPhone } from "@/lib/utils";
 
 export function ShopOrderTrackingView({ order }: { order: ShopOrderRecord }) {
@@ -26,8 +26,11 @@ export function ShopOrderTrackingView({ order }: { order: ShopOrderRecord }) {
               <InfoCard icon={<Phone className="h-4 w-4" />} label="الهاتف" value={maskPhone(order.phone)} />
               <InfoCard icon={<CreditCard className="h-4 w-4" />} label="الدفع" value={getShopPaymentMethodLabel(order.payment_method)} />
               <InfoCard icon={<Clock3 className="h-4 w-4" />} label="الطلب" value={formatDateTime(order.created_at)} />
-              <InfoCard icon={<MapPinned className="h-4 w-4" />} label="المدينة" value={order.city} />
+              <InfoCard icon={<MapPinned className="h-4 w-4" />} label="المحافظة" value={order.province || order.city} />
+              <InfoCard icon={<MapPinned className="h-4 w-4" />} label="المنطقة" value={order.district || "—"} />
               <InfoCard icon={<CalendarDays className="h-4 w-4" />} label="الإجمالي" value={formatAmountWithCurrency(order.total)} />
+              <InfoCard icon={<Clock3 className="h-4 w-4" />} label="التوصيل" value={order.delivery_type || "توصيل"} />
+              <InfoCard icon={<Clock3 className="h-4 w-4" />} label="الوقت المتوقع" value={order.delivery_eta || "—"} />
             </div>
 
             <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
@@ -62,6 +65,15 @@ export function ShopOrderTrackingView({ order }: { order: ShopOrderRecord }) {
                             />
                           ) : null}
                           <span>{item.selected_color_name || item.selected_color_hex}</span>
+                        </div>
+                      ) : null}
+                      {getCustomizationSummaryEntries(item.customization).length ? (
+                        <div className="mt-2 space-y-1 text-xs text-ajn-muted">
+                          {getCustomizationSummaryEntries(item.customization).map((entry) => (
+                            <p key={`${item.id}-${entry.label}`}>
+                              {entry.label}: <span className="text-white">{entry.value}</span>
+                            </p>
+                          ))}
                         </div>
                       ) : null}
                       <p className="text-sm text-ajn-muted">x{item.quantity}</p>

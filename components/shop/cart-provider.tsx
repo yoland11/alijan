@@ -3,9 +3,16 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import type { ProductColorOption, ProductRecord, ShopCartItem } from "@/lib/shop-types";
+import type {
+  ProductColorOption,
+  ProductCustomizationPayload,
+  ProductRecord,
+  ShopCartItem,
+} from "@/lib/shop-types";
 import {
   buildShopCartItemKey,
+  isProductSoldOut,
+  normalizeProductCustomizationPayload,
   normalizeProductImageFit,
   normalizeProductImagePosition,
   normalizeProductImageZoom,
@@ -17,7 +24,12 @@ interface ShopCartContextValue {
   items: ShopCartItem[];
   itemCount: number;
   subtotal: number;
-  addItem: (product: ProductRecord, quantity?: number, selectedColor?: ProductColorOption | null) => void;
+  addItem: (
+    product: ProductRecord,
+    quantity?: number,
+    selectedColor?: ProductColorOption | null,
+    customization?: ProductCustomizationPayload,
+  ) => void;
   updateQuantity: (cartKey: string, quantity: number) => void;
   removeItem: (cartKey: string) => void;
   clearCart: () => void;
@@ -55,6 +67,7 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
               image_zoom: normalizeProductImageZoom(item.image_zoom),
               selected_color_name: item.selected_color_name || "",
               selected_color_hex: item.selected_color_hex || "",
+              customization: normalizeProductCustomizationPayload(item.customization),
             })),
           );
         }
@@ -84,22 +97,43 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
       items,
       subtotal,
       itemCount,
-      addItem: (product, quantity = 1, selectedColor = null) => {
+      addItem: (product, quantity = 1, selectedColor = null, customization) => {
+        if (isProductSoldOut(product)) {
+          toast.error("نفذت كمية هذا المنتج.");
+          return;
+        }
+
         setItems((current) => {
+          const normalizedCustomization = normalizeProductCustomizationPayload(
+            customization,
+            product.customization_options,
+          );
           const cartKey = buildShopCartItemKey(
             product.id,
             selectedColor?.color_hex ?? "",
             selectedColor?.color_name ?? "",
+            normalizedCustomization,
           );
           const existing = current.find((item) => item.cart_key === cartKey);
           const nextQuantity = Math.max(1, quantity);
+          const maxStock = typeof product.stock_quantity === "number" ? product.stock_quantity : null;
 
           if (existing) {
+            const updatedQuantity = existing.quantity + nextQuantity;
+
+            if (maxStock !== null && updatedQuantity > maxStock) {
+              toast.error(`الكمية المتاحة هي ${maxStock} فقط.`);
+              return current;
+            }
+
             return current.map((item) =>
-              item.cart_key === cartKey
-                ? { ...item, quantity: item.quantity + nextQuantity }
-                : item,
+              item.cart_key === cartKey ? { ...item, quantity: updatedQuantity } : item,
             );
+          }
+
+          if (maxStock !== null && nextQuantity > maxStock) {
+            toast.error(`الكمية المتاحة هي ${maxStock} فقط.`);
+            return current;
           }
 
           return [
@@ -115,6 +149,7 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
               image_zoom: product.image_zoom,
               selected_color_name: selectedColor?.color_name ?? "",
               selected_color_hex: selectedColor?.color_hex ?? "",
+              customization: normalizedCustomization,
               price: product.price,
               quantity: nextQuantity,
             },

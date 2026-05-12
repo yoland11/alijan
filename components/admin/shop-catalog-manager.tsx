@@ -9,10 +9,12 @@ import {
   Package2,
   Palette,
   Pencil,
+  PlayCircle,
   Plus,
   Save,
   Star,
   Trash2,
+  Video,
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -25,6 +27,7 @@ import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  SHOP_CUSTOMIZATION_FIELDS,
   SHOP_PRODUCT_COLOR_LIBRARY,
   SHOP_PRODUCT_IMAGE_FITS,
   SHOP_PRODUCT_IMAGE_POSITIONS,
@@ -69,6 +72,16 @@ const emptyProductForm = {
   image_zoom: "1",
   color_options: [] as ProductColorOption[],
   preview_images: [] as ProductPreviewImage[],
+  video_url: "",
+  stock_quantity: "",
+  customization_options: {
+    enable_name: false,
+    enable_message: false,
+    enable_wrapping_note: false,
+    enable_special_color: false,
+    enable_occasion_date: false,
+    enable_customer_image: false,
+  },
   is_active: true,
   sort_order: "0",
 };
@@ -96,6 +109,7 @@ export function ShopCatalogManager() {
   const [saving, setSaving] = useState(false);
   const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
   const [uploadingProductImage, setUploadingProductImage] = useState(false);
+  const [uploadingProductVideo, setUploadingProductVideo] = useState(false);
   const [uploadingPreviewImages, setUploadingPreviewImages] = useState(false);
   const [activeColorOptionId, setActiveColorOptionId] = useState<string | null>(null);
   const [hoveredColorOptionId, setHoveredColorOptionId] = useState<string | null>(null);
@@ -261,6 +275,45 @@ export function ShopCatalogManager() {
       } else {
         setUploadingProductImage(false);
       }
+    }
+  };
+
+  const uploadProductVideo = async (file: File) => {
+    const formData = new FormData();
+    formData.append("files", file);
+    const loadingToast = toast.loading("جاري رفع الفيديو...");
+    setUploadingProductVideo(true);
+
+    try {
+      const response = await fetch("/api/admin/media?kind=product-video", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as {
+        message?: string;
+        files?: { url: string }[];
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر رفع الفيديو.");
+      }
+
+      const uploadedUrl = payload.files?.[0]?.url ?? "";
+
+      if (!uploadedUrl) {
+        throw new Error("تعذر رفع الفيديو.");
+      }
+
+      setProductForm((current) => ({
+        ...current,
+        video_url: uploadedUrl,
+      }));
+      toast.success("تم رفع الفيديو.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر رفع الفيديو.");
+    } finally {
+      toast.dismiss(loadingToast);
+      setUploadingProductVideo(false);
     }
   };
 
@@ -964,6 +1017,14 @@ export function ShopCatalogManager() {
                   onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))}
                 />
                 <Input
+                  placeholder="الكمية المتوفرة"
+                  value={productForm.stock_quantity}
+                  inputMode="numeric"
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, stock_quantity: event.target.value }))
+                  }
+                />
+                <Input
                   placeholder="الترتيب"
                   value={productForm.sort_order}
                   inputMode="numeric"
@@ -981,6 +1042,66 @@ export function ShopCatalogManager() {
                   setProductForm((current) => ({ ...current, description: event.target.value }))
                 }
               />
+
+              <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+                <Input
+                  placeholder="فيديو المنتج"
+                  value={productForm.video_url}
+                  onChange={(event) =>
+                    setProductForm((current) => ({ ...current, video_url: event.target.value }))
+                  }
+                />
+                <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
+                  <Video className="ml-2 h-4 w-4 text-ajn-gold" />
+                  {uploadingProductVideo ? "جاري الرفع..." : "رفع فيديو"}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void uploadProductVideo(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="h-5 w-5 text-ajn-gold" />
+                  <h3 className="text-lg font-bold text-white">تخصيص المنتج</h3>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {SHOP_CUSTOMIZATION_FIELDS.map((field) => {
+                    const enabled = productForm.customization_options[field.key];
+
+                    return (
+                      <button
+                        key={field.key}
+                        type="button"
+                        onClick={() =>
+                          setProductForm((current) => ({
+                            ...current,
+                            customization_options: {
+                              ...current.customization_options,
+                              [field.key]: !current.customization_options[field.key],
+                            },
+                          }))
+                        }
+                        className={`rounded-[22px] border px-4 py-4 text-right transition ${
+                          enabled
+                            ? "border-ajn-gold bg-ajn-gold/[0.12] text-ajn-gold"
+                            : "border-ajn-line bg-white/[0.03] text-white hover:border-ajn-gold/35"
+                        }`}
+                      >
+                        <p className="font-semibold">{field.label}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -1236,9 +1357,9 @@ export function ShopCatalogManager() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
-                  <ImagePlus className="ml-2 h-4 w-4 text-ajn-gold" />
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
+                    <ImagePlus className="ml-2 h-4 w-4 text-ajn-gold" />
                   {uploadingProductImage ? "جاري تحسين الصورة..." : "رفع صورة"}
                   <input
                     type="file"
@@ -1287,8 +1408,8 @@ export function ShopCatalogManager() {
                 </div>
               </div>
 
-              {primaryPreviewImage?.url || productForm.image_url ? (
-                <div className="relative">
+                {primaryPreviewImage?.url || productForm.image_url ? (
+                  <div className="relative">
                   <PreviewImage
                     src={buildProductImageProxyUrl(primaryPreviewImage?.thumbnail_url || productForm.image_url)}
                     previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || productForm.image_url)}
@@ -1309,9 +1430,18 @@ export function ShopCatalogManager() {
                     <Trash2 className="h-4 w-4" />
                     حذف الصورة
                   </Button>
-                </div>
-              ) : null}
-            </div>
+                  </div>
+                ) : null}
+
+                {productForm.video_url ? (
+                  <div className="rounded-[24px] border border-ajn-line bg-black/25 p-4">
+                    <p className="mb-3 text-sm font-semibold text-white">فيديو المنتج</p>
+                    <video controls className="h-56 w-full rounded-[20px] bg-black">
+                      <source src={buildProductImageProxyUrl(productForm.video_url)} />
+                    </video>
+                  </div>
+                ) : null}
+              </div>
 
             <div className="space-y-4">
               {(loading ? Array.from({ length: 3 }) : products).map((item, index) =>
@@ -1396,6 +1526,19 @@ export function ShopCatalogManager() {
                         <p className="mt-2 text-sm text-ajn-gold">
                           {formatAmountWithCurrency(productItem.price)}
                         </p>
+                        <p className="mt-1 text-xs font-semibold text-ajn-muted">
+                          {typeof productItem.stock_quantity === "number"
+                            ? productItem.stock_quantity > 0
+                              ? `${productItem.stock_quantity} متوفر`
+                              : "نفذت الكمية"
+                            : "متوفر"}
+                        </p>
+                        {productItem.video_url ? (
+                          <p className="mt-1 text-xs font-semibold text-ajn-goldSoft">يوجد فيديو</p>
+                        ) : null}
+                        {Object.values(productItem.customization_options).some(Boolean) ? (
+                          <p className="mt-1 text-xs font-semibold text-ajn-goldSoft">يدعم التخصيص</p>
+                        ) : null}
                         <p className="mt-1 text-sm text-ajn-muted">
                           {categoryMap.get(productItem.category_id)?.name ?? "—"}
                         </p>
@@ -1420,6 +1563,12 @@ export function ShopCatalogManager() {
                                 image_zoom: String(productItem.image_zoom),
                                 color_options: productItem.color_options,
                                 preview_images: productItem.preview_images,
+                                video_url: productItem.video_url,
+                                stock_quantity:
+                                  typeof productItem.stock_quantity === "number"
+                                    ? String(productItem.stock_quantity)
+                                    : "",
+                                customization_options: productItem.customization_options,
                                 is_active: productItem.is_active,
                                 sort_order: String(productItem.sort_order),
                               });

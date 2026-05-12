@@ -27,8 +27,15 @@ export async function PUT(request: Request, context: RouteContext) {
       );
     }
 
-    const order = await updateShopOrderAdminState(id, parsed.data);
-    return NextResponse.json({ order, message: "تم تحديث الطلب." });
+    const result = await updateShopOrderAdminState(id, parsed.data);
+    const message =
+      parsed.data.status === "ملغي" && result.inventoryAction === "restored"
+        ? "تم إلغاء الطلب وإرجاع الكمية للمخزن."
+        : parsed.data.status !== undefined && result.inventoryAction === "reserved"
+          ? "تمت إعادة تفعيل الطلب وخصم الكمية من المخزن."
+          : "تم تحديث الطلب.";
+
+    return NextResponse.json({ order: result.order, message, inventoryAction: result.inventoryAction });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر تحديث الطلب." },
@@ -46,8 +53,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    await deleteShopOrder(id);
-    return NextResponse.json({ message: "تم حذف الطلب." });
+    const result = await deleteShopOrder(id);
+    const message =
+      result.inventoryAction === "restored"
+        ? "تم حذف الطلب وإرجاع الكميات للمخزن."
+        : "تم حذف الطلب.";
+    return NextResponse.json({ message, inventoryAction: result.inventoryAction });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : "تعذر حذف الطلب." },

@@ -12,11 +12,14 @@ import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
 import { Input } from "@/components/ui/input";
 import { PreviewImage } from "@/components/ui/preview-image";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { ShopSettingsRecord, ShopPaymentMethod } from "@/lib/shop-types";
 import {
   buildGoogleMapsUrl,
   buildProductImageProxyUrl,
+  getCustomizationSummaryEntries,
+  getDeliveryRegionByProvince,
   getProductImagePresentation,
   getShopPaymentMethodLabel,
 } from "@/lib/shop-utils";
@@ -28,6 +31,7 @@ const defaultSettings: ShopSettingsRecord = {
   wrapping_price: 0,
   delivery_fee: 0,
   delivery_time_text: "40 - 50 دقائق",
+  delivery_regions: [],
   updated_at: "",
 };
 
@@ -41,7 +45,8 @@ export function CheckoutPageClient() {
   const [wrappingEnabled, setWrappingEnabled] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
-  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
   const [address, setAddress] = useState("");
   const [driverNotes, setDriverNotes] = useState("");
   const [locationLat, setLocationLat] = useState<number | null>(null);
@@ -72,10 +77,18 @@ export function CheckoutPageClient() {
     void load();
   }, []);
 
+  const selectedDeliveryRegion = useMemo(
+    () => getDeliveryRegionByProvince(settings.delivery_regions, province),
+    [province, settings.delivery_regions],
+  );
+
+  const resolvedDeliveryFee = selectedDeliveryRegion?.fee ?? settings.delivery_fee;
+  const resolvedDeliveryTime = selectedDeliveryRegion?.eta_text || settings.delivery_time_text;
+  const resolvedDeliveryType = selectedDeliveryRegion?.delivery_type || "توصيل";
   const wrappingPrice = wrappingEnabled ? settings.wrapping_price : 0;
   const total = useMemo(
-    () => subtotal + settings.delivery_fee + wrappingPrice,
-    [settings.delivery_fee, subtotal, wrappingPrice],
+    () => subtotal + resolvedDeliveryFee + wrappingPrice,
+    [resolvedDeliveryFee, subtotal, wrappingPrice],
   );
 
   const locate = () => {
@@ -127,7 +140,8 @@ export function CheckoutPageClient() {
         body: JSON.stringify({
           customer_name: customerName,
           phone,
-          city,
+          province,
+          district,
           address,
           driver_notes: driverNotes,
           location_lat: locationLat,
@@ -135,11 +149,14 @@ export function CheckoutPageClient() {
           google_maps_url: googleMapsUrl,
           payment_method: paymentMethod,
           wrapping_enabled: wrappingEnabled,
+          delivery_type: resolvedDeliveryType,
+          delivery_eta: resolvedDeliveryTime,
           items: items.map((item) => ({
             product_id: item.product_id,
             quantity: item.quantity,
             selected_color_name: item.selected_color_name,
             selected_color_hex: item.selected_color_hex,
+            customization: item.customization,
           })),
         }),
       });
@@ -199,10 +216,13 @@ export function CheckoutPageClient() {
           <>
             <CheckoutCard icon={<Truck className="h-5 w-5" />} title="وقت التوصيل">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-lg font-semibold text-white">في {settings.delivery_time_text}</p>
-                <Button variant="secondary" className="h-10 px-4" onClick={() => toast.message("عدّل الوقت من الإدارة.")}>
-                  تغيير
-                </Button>
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold text-white">في {resolvedDeliveryTime}</p>
+                  <p className="text-sm text-ajn-muted">{resolvedDeliveryType}</p>
+                </div>
+                <div className="rounded-2xl border border-ajn-gold/20 bg-ajn-gold/[0.08] px-4 py-2 text-sm font-semibold text-ajn-gold">
+                  {formatAmountWithCurrency(resolvedDeliveryFee)}
+                </div>
               </div>
             </CheckoutCard>
 
@@ -210,9 +230,33 @@ export function CheckoutPageClient() {
               <div className="grid gap-4 md:grid-cols-2">
                 <Input placeholder="الاسم الكامل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                 <Input placeholder="رقم الهاتف" value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="numeric" pattern="[0-9]*" />
-                <Input placeholder="المحافظة / المدينة" value={city} onChange={(e) => setCity(e.target.value)} />
-                <Input placeholder="العنوان" value={address} onChange={(e) => setAddress(e.target.value)} />
+                <Select value={province} onChange={(event) => setProvince(event.target.value)}>
+                  <option value="" className="bg-black">المحافظة</option>
+                  {settings.delivery_regions.map((region) => (
+                    <option key={region.id} value={region.province} className="bg-black">
+                      {region.province}
+                    </option>
+                  ))}
+                </Select>
+                <Input placeholder="المدينة / المنطقة" value={district} onChange={(e) => setDistrict(e.target.value)} />
+                <Input placeholder="العنوان" value={address} onChange={(e) => setAddress(e.target.value)} className="md:col-span-2" />
               </div>
+              {province ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                  <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                    <p className="text-xs font-semibold text-ajn-goldSoft">نوع التوصيل</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{resolvedDeliveryType}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                    <p className="text-xs font-semibold text-ajn-goldSoft">تكلفة التوصيل</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{formatAmountWithCurrency(resolvedDeliveryFee)}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                    <p className="text-xs font-semibold text-ajn-goldSoft">الوقت المتوقع</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{resolvedDeliveryTime}</p>
+                  </div>
+                </div>
+              ) : null}
               <div className="mt-4 flex flex-col gap-3">
                 <Button variant="secondary" className="w-full sm:w-auto" onClick={locate} disabled={locating}>
                   <MapPin className="h-4 w-4" />
@@ -347,6 +391,15 @@ export function CheckoutPageClient() {
                           <span>{item.selected_color_name || item.selected_color_hex}</span>
                         </div>
                       ) : null}
+                      {getCustomizationSummaryEntries(item.customization).length ? (
+                        <div className="mt-2 space-y-1 text-xs text-ajn-muted">
+                          {getCustomizationSummaryEntries(item.customization).map((entry) => (
+                            <p key={`${item.cart_key}-${entry.label}`}>
+                              {entry.label}: <span className="text-white">{entry.value}</span>
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
                       <p className="text-sm text-ajn-muted">x{item.quantity}</p>
                     </div>
                     <p className="text-sm font-semibold text-ajn-gold">
@@ -356,7 +409,7 @@ export function CheckoutPageClient() {
                 ))}
 
                 <SummaryRow label="المجموع الجزئي" value={formatAmountWithCurrency(subtotal)} />
-                <SummaryRow label="التوصيل" value={formatAmountWithCurrency(settings.delivery_fee)} />
+                <SummaryRow label="التوصيل" value={formatAmountWithCurrency(resolvedDeliveryFee)} />
                 {wrappingEnabled ? (
                   <SummaryRow label="التغليف" value={formatAmountWithCurrency(wrappingPrice)} />
                 ) : null}

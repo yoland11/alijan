@@ -1,5 +1,15 @@
 import { SHOP_DEFAULT_SETTINGS } from "@/lib/shop-constants";
 import type {
+  CheckoutOrderSchema,
+  PortfolioEntrySchema,
+  ProductSchema,
+  ServiceCategorySchema,
+  ShopOrderAdminUpdateSchema,
+  ShopOrderStatusSchema,
+  ShopSettingsSchema,
+} from "@/lib/shop-validators";
+import type {
+  PortfolioEntryRecord,
   ProductRecord,
   ServiceCategoryRecord,
   ShopCatalogPayload,
@@ -9,22 +19,22 @@ import type {
 } from "@/lib/shop-types";
 import {
   buildShopCategoryTree,
+  getDeliveryRegionByProvince,
+  getShopProductColorByHex,
+  getShopProductColorByName,
+  normalizePortfolioEntryRecord,
+  normalizeProductCustomizationPayload,
   normalizeProductRecord,
   normalizeServiceCategoryRecord,
   normalizeShopOrderItemRecord,
   normalizeShopOrderRecord,
   normalizeShopSettingsRecord,
+  isProductSoldOut,
 } from "@/lib/shop-utils";
 import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { getLastFourDigits, normalizeTrackingQuery } from "@/lib/utils";
-import type {
-  CheckoutOrderSchema,
-  ShopOrderAdminUpdateSchema,
-  ProductSchema,
-  ServiceCategorySchema,
-  ShopOrderStatusSchema,
-  ShopSettingsSchema,
-} from "@/lib/shop-validators";
+
+type ShopInventoryAction = "none" | "restored" | "reserved";
 
 async function hydrateShopOrders(ordersData: Record<string, unknown>[]) {
   const supabase = createServiceSupabaseClient();
@@ -55,6 +65,96 @@ async function hydrateShopOrders(ordersData: Record<string, unknown>[]) {
     const id = String(raw.id ?? "");
     return normalizeShopOrderRecord(raw, itemsByOrder.get(id) ?? []);
   });
+}
+
+async function loadProductsByIds(productIds: string[]) {
+  const supabase = createServiceSupabaseClient();
+  const uniqueIds = [...new Set(productIds.filter(Boolean))];
+
+  if (!uniqueIds.length) {
+    return new Map<string, ProductRecord>();
+  }
+
+  const { data, error } = await supabase.from("products").select("*").in("id", uniqueIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const products = (data ?? []).map((item) => normalizeProductRecord(item as Record<string, unknown>));
+  return new Map(products.map((item) => [item.id, item]));
+}
+
+function aggregateOrderItemQuantities(items: Array<{ product_id: string | null; quantity: number }>) {
+  return items.reduce<Map<string, number>>((map, item) => {
+    if (!item.product_id) {
+      return map;
+    }
+
+    map.set(item.product_id, (map.get(item.product_id) ?? 0) + Math.max(1, item.quantity));
+    return map;
+  }, new Map<string, number>());
+}
+
+async function restoreStockForOrderItems(items: Array<{ product_id: string | null; quantity: number }>) {
+  const supabase = createServiceSupabaseClient();
+  const quantitiesByProduct = aggregateOrderItemQuantities(items);
+  const productMap = await loadProductsByIds([...quantitiesByProduct.keys()]);
+
+  for (const [productId, quantity] of quantitiesByProduct.entries()) {
+    const product = productMap.get(productId);
+
+    if (!product || typeof product.stock_quantity !== "number") {
+      continue;
+    }
+
+    const { error } = await supabase
+      .from("products")
+      .update({ stock_quantity: product.stock_quantity + quantity })
+      .eq("id", productId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+async function reserveStockForOrderItems(
+  items: Array<{ product_id: string | null; quantity: number }>,
+  options?: { requireActive?: boolean },
+) {
+  const supabase = createServiceSupabaseClient();
+  const quantitiesByProduct = aggregateOrderItemQuantities(items);
+  const productMap = await loadProductsByIds([...quantitiesByProduct.keys()]);
+
+  for (const [productId, quantity] of quantitiesByProduct.entries()) {
+    const product = productMap.get(productId);
+
+    if (!product) {
+      throw new Error("أحد المنتجات لم يعد متاحًا.");
+    }
+
+    if (options?.requireActive && !product.is_active) {
+      throw new Error(`المنتج ${product.name} لم يعد متاحًا.`);
+    }
+
+    if (typeof product.stock_quantity !== "number") {
+      continue;
+    }
+
+    if (quantity > product.stock_quantity) {
+      throw new Error(`لا توجد كمية كافية لإعادة تفعيل الطلب للمنتج ${product.name}.`);
+    }
+
+    const { error } = await supabase
+      .from("products")
+      .update({ stock_quantity: Math.max(0, product.stock_quantity - quantity) })
+      .eq("id", productId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
 }
 
 async function generateUniqueShopOrderCode(phoneLast4: string) {
@@ -96,7 +196,6 @@ async function fetchCategories(activeOnly = false) {
   }
 
   const { data, error } = await query;
-
   if (error) {
     throw new Error(error.message);
   }
@@ -113,7 +212,6 @@ async function fetchProducts(activeOnly = false) {
   }
 
   const { data, error } = await query;
-
   if (error) {
     throw new Error(error.message);
   }
@@ -123,14 +221,17 @@ async function fetchProducts(activeOnly = false) {
 
 export async function getOrCreateShopSettings() {
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase.from("settings").select("*").order("updated_at", { ascending: false }).limit(1);
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(1);
 
   if (error) {
     throw new Error(error.message);
   }
 
   const first = data?.[0];
-
   if (first) {
     return normalizeShopSettingsRecord(first as Record<string, unknown>);
   }
@@ -179,13 +280,7 @@ export async function listAdminCatalog() {
 
 export async function createServiceCategory(input: ServiceCategorySchema) {
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
-    .from("service_categories")
-    .insert({
-      ...input,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.from("service_categories").insert({ ...input }).select("*").single();
 
   if (error) {
     throw new Error(error.message);
@@ -198,9 +293,7 @@ export async function updateServiceCategory(id: string, input: ServiceCategorySc
   const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase
     .from("service_categories")
-    .update({
-      ...input,
-    })
+    .update({ ...input })
     .eq("id", id)
     .select("*")
     .single();
@@ -215,7 +308,6 @@ export async function updateServiceCategory(id: string, input: ServiceCategorySc
 export async function deleteServiceCategory(id: string) {
   const supabase = createServiceSupabaseClient();
   const { error } = await supabase.from("service_categories").delete().eq("id", id);
-
   if (error) {
     throw new Error(error.message);
   }
@@ -223,13 +315,7 @@ export async function deleteServiceCategory(id: string) {
 
 export async function createProduct(input: ProductSchema) {
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
-    .from("products")
-    .insert({
-      ...input,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.from("products").insert({ ...input }).select("*").single();
 
   if (error) {
     throw new Error(error.message);
@@ -242,9 +328,7 @@ export async function updateProduct(id: string, input: ProductSchema) {
   const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .update({
-      ...input,
-    })
+    .update({ ...input })
     .eq("id", id)
     .select("*")
     .single();
@@ -259,7 +343,6 @@ export async function updateProduct(id: string, input: ProductSchema) {
 export async function deleteProduct(id: string) {
   const supabase = createServiceSupabaseClient();
   const { error } = await supabase.from("products").delete().eq("id", id);
-
   if (error) {
     throw new Error(error.message);
   }
@@ -270,9 +353,7 @@ export async function updateShopSettings(input: ShopSettingsSchema) {
   const current = await getOrCreateShopSettings();
   const { data, error } = await supabase
     .from("settings")
-    .update({
-      ...input,
-    })
+    .update({ ...input })
     .eq("id", current.id)
     .select("*")
     .single();
@@ -336,7 +417,6 @@ export async function searchShopOrders(query: string) {
   }
 
   const { data, error } = await search;
-
   if (error) {
     throw new Error(error.message);
   }
@@ -345,32 +425,8 @@ export async function searchShopOrders(query: string) {
 }
 
 export async function updateShopOrderStatus(id: string, input: ShopOrderStatusSchema) {
-  const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
-    .from("shop_orders")
-    .update({
-      status: input.status,
-    })
-    .eq("id", id)
-    .select("*")
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const { data: itemsData, error: itemsError } = await supabase
-    .from("shop_order_items")
-    .select("*")
-    .eq("order_id", id)
-    .order("created_at", { ascending: true });
-
-  if (itemsError) {
-    throw new Error(itemsError.message);
-  }
-
-  const items = (itemsData ?? []).map((item) => normalizeShopOrderItemRecord(item as Record<string, unknown>));
-  return normalizeShopOrderRecord(data as Record<string, unknown>, items);
+  const result = await updateShopOrderAdminState(id, { status: input.status });
+  return result.order;
 }
 
 export async function updateShopOrderAdminState(id: string, input: ShopOrderAdminUpdateSchema) {
@@ -381,27 +437,31 @@ export async function updateShopOrderAdminState(id: string, input: ShopOrderAdmi
     throw new Error("الطلب غير موجود.");
   }
 
-  const nextAttempts = input.increment_print_attempts
-    ? existing.print_attempts + 1
-    : existing.print_attempts;
-
-  const payload: Record<string, unknown> = {
-    print_attempts: nextAttempts,
-  };
-
+  const nextAttempts = input.increment_print_attempts ? existing.print_attempts + 1 : existing.print_attempts;
+  let inventoryAction: ShopInventoryAction = "none";
+  const payload: Record<string, unknown> = { print_attempts: nextAttempts };
   if (input.status !== undefined) {
-    payload.status = input.status;
-  }
+    const nextStatus = input.status;
+    const isCancelling = nextStatus === "ملغي" && !existing.stock_restored;
+    const isReactivating = existing.status === "ملغي" && nextStatus !== "ملغي";
 
-  if (input.print_status !== undefined) {
-    payload.print_status = input.print_status;
-  }
+    if (isCancelling && !existing.stock_restored) {
+      await restoreStockForOrderItems(existing.items);
+      payload.stock_restored = true;
+      inventoryAction = "restored";
+    }
 
-  if (input.reset_printed_at) {
-    payload.printed_at = null;
-  } else if (input.printed_at !== undefined) {
-    payload.printed_at = input.printed_at;
+    if (isReactivating && existing.stock_restored) {
+      await reserveStockForOrderItems(existing.items, { requireActive: true });
+      payload.stock_restored = false;
+      inventoryAction = "reserved";
+    }
+
+    payload.status = nextStatus;
   }
+  if (input.print_status !== undefined) payload.print_status = input.print_status;
+  if (input.reset_printed_at) payload.printed_at = null;
+  else if (input.printed_at !== undefined) payload.printed_at = input.printed_at;
 
   const { data, error } = await supabase
     .from("shop_orders")
@@ -425,23 +485,42 @@ export async function updateShopOrderAdminState(id: string, input: ShopOrderAdmi
   }
 
   const items = (itemsData ?? []).map((item) => normalizeShopOrderItemRecord(item as Record<string, unknown>));
-  return normalizeShopOrderRecord(data as Record<string, unknown>, items);
+  return {
+    order: normalizeShopOrderRecord(data as Record<string, unknown>, items),
+    inventoryAction,
+  };
 }
 
 export async function deleteShopOrder(id: string) {
   const supabase = createServiceSupabaseClient();
-  const { error } = await supabase.from("shop_orders").delete().eq("id", id);
+  const existing = await getShopOrderById(id);
 
+  if (!existing) {
+    throw new Error("الطلب غير موجود.");
+  }
+
+  let inventoryAction: ShopInventoryAction = "none";
+
+  if (!existing.stock_restored) {
+    await restoreStockForOrderItems(existing.items);
+    inventoryAction = "restored";
+  }
+
+  const { error } = await supabase.from("shop_orders").delete().eq("id", id);
   if (error) {
     throw new Error(error.message);
   }
+
+  return { inventoryAction };
 }
 
 export async function createShopOrder(input: CheckoutOrderSchema) {
   const supabase = createServiceSupabaseClient();
   const settings = await getOrCreateShopSettings();
+  const deliveryRegion = getDeliveryRegionByProvince(settings.delivery_regions, input.province);
   const phoneLast4 = getLastFourDigits(input.phone);
   const productIds = input.items.map((item) => item.product_id);
+
   const { data: productsData, error: productsError } = await supabase
     .from("products")
     .select("*")
@@ -457,12 +536,19 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
 
   const itemsPayload = input.items.map((item) => {
     const product = productMap.get(item.product_id);
-
     if (!product) {
       throw new Error("أحد المنتجات لم يعد متاحًا.");
     }
 
+    if (isProductSoldOut(product)) {
+      throw new Error(`المنتج ${product.name} نفذت كميته.`);
+    }
+
     const quantity = Math.max(1, item.quantity);
+    if (typeof product.stock_quantity === "number" && quantity > product.stock_quantity) {
+      throw new Error(`الكمية المتاحة للمنتج ${product.name} هي ${product.stock_quantity} فقط.`);
+    }
+
     const total = product.price * quantity;
     const selectedColor =
       item.selected_color_hex || item.selected_color_name
@@ -473,20 +559,28 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
           ) ?? null
         : null;
 
+    const customization = normalizeProductCustomizationPayload(
+      item.customization,
+      product.customization_options,
+    );
+
     return {
       product,
       quantity,
       total,
-      selectedColor,
       selectedColorName: selectedColor?.color_name ?? item.selected_color_name ?? "",
       selectedColorHex: selectedColor?.color_hex ?? item.selected_color_hex ?? "",
+      customization,
     };
   });
 
   const subtotal = itemsPayload.reduce((sum, item) => sum + item.total, 0);
   const wrappingPrice = input.wrapping_enabled ? settings.wrapping_price : 0;
-  const deliveryFee = settings.delivery_fee;
+  const deliveryFee = deliveryRegion?.fee ?? settings.delivery_fee;
+  const deliveryType = deliveryRegion?.delivery_type || input.delivery_type || "توصيل";
+  const deliveryEta = deliveryRegion?.eta_text || input.delivery_eta || settings.delivery_time_text;
   const total = subtotal + wrappingPrice + deliveryFee;
+
   let orderData: Record<string, unknown> | null = null;
   let orderId = "";
 
@@ -500,7 +594,11 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
         customer_name: input.customer_name,
         phone: input.phone,
         city: input.city,
+        province: input.province,
+        district: input.district,
         address: input.address,
+        delivery_type: deliveryType,
+        delivery_eta: deliveryEta,
         driver_notes: input.driver_notes,
         location_lat: input.location_lat,
         location_lng: input.location_lng,
@@ -509,15 +607,16 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
         wrapping_enabled: input.wrapping_enabled,
         wrapping_price: wrappingPrice,
         delivery_fee: deliveryFee,
-      subtotal,
-      total,
-      status: "طلب جديد",
-      print_status: "pending",
-      printed_at: null,
-      print_attempts: 0,
-    })
-    .select("*")
-    .single();
+        subtotal,
+        total,
+        status: "طلب جديد",
+        stock_restored: false,
+        print_status: "pending",
+        printed_at: null,
+        print_attempts: 0,
+      })
+      .select("*")
+      .single();
 
     if (!error) {
       orderData = data as Record<string, unknown>;
@@ -535,6 +634,7 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
   if (!orderData || !orderId) {
     throw new Error("تعذر إنشاء الطلب.");
   }
+
   const { data: itemsData, error: itemsError } = await supabase
     .from("shop_order_items")
     .insert(
@@ -545,6 +645,7 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
         product_image: item.product.image_url,
         selected_color_name: item.selectedColorName,
         selected_color_hex: item.selectedColorHex,
+        customization: item.customization,
         quantity: item.quantity,
         price: item.product.price,
         total: item.total,
@@ -557,6 +658,19 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
     throw new Error(itemsError.message);
   }
 
+  try {
+    await reserveStockForOrderItems(
+      itemsPayload.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+      })),
+      { requireActive: true },
+    );
+  } catch (error) {
+    await supabase.from("shop_orders").delete().eq("id", orderId);
+    throw error;
+  }
+
   const normalizedItems = (itemsData ?? []).map((item) =>
     normalizeShopOrderItemRecord(item as Record<string, unknown>),
   );
@@ -564,14 +678,68 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
   return normalizeShopOrderRecord(orderData, normalizedItems);
 }
 
+export async function listPortfolioEntries(activeOnly = true) {
+  const supabase = createServiceSupabaseClient();
+  let query = supabase.from("portfolio_entries").select("*").order("sort_order", { ascending: true });
+
+  if (activeOnly) {
+    query = query.eq("is_active", true);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []).map((item) => normalizePortfolioEntryRecord(item as Record<string, unknown>));
+}
+
+export async function createPortfolioEntry(input: PortfolioEntrySchema) {
+  const supabase = createServiceSupabaseClient();
+  const payload = {
+    ...input,
+    thumbnail_url: input.thumbnail_url || (input.media_type === "image" ? input.media_url : ""),
+  };
+  const { data, error } = await supabase.from("portfolio_entries").insert(payload).select("*").single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return normalizePortfolioEntryRecord(data as Record<string, unknown>);
+}
+
+export async function updatePortfolioEntry(id: string, input: PortfolioEntrySchema) {
+  const supabase = createServiceSupabaseClient();
+  const payload = {
+    ...input,
+    thumbnail_url: input.thumbnail_url || (input.media_type === "image" ? input.media_url : ""),
+  };
+  const { data, error } = await supabase
+    .from("portfolio_entries")
+    .update(payload)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return normalizePortfolioEntryRecord(data as Record<string, unknown>);
+}
+
+export async function deletePortfolioEntry(id: string) {
+  const supabase = createServiceSupabaseClient();
+  const { error } = await supabase.from("portfolio_entries").delete().eq("id", id);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 async function getShopOrderById(id: string) {
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
-    .from("shop_orders")
-    .select("*")
-    .eq("id", id)
-    .limit(1)
-    .maybeSingle();
+  const { data, error } = await supabase.from("shop_orders").select("*").eq("id", id).limit(1).maybeSingle();
 
   if (error) {
     throw new Error(error.message);
@@ -581,5 +749,6 @@ async function getShopOrderById(id: string) {
     return null;
   }
 
-  return normalizeShopOrderRecord(data as Record<string, unknown>);
+  const [order] = await hydrateShopOrders([data as Record<string, unknown>]);
+  return order ?? null;
 }

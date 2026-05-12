@@ -1,13 +1,15 @@
 "use client";
 
-import { ImagePlus, Save, Trash2 } from "lucide-react";
+import { ImagePlus, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PreviewImage } from "@/components/ui/preview-image";
+import { Select } from "@/components/ui/select";
 import type { ShopSettingsRecord } from "@/lib/shop-types";
+import { SHOP_DEFAULT_DELIVERY_REGIONS } from "@/lib/shop-constants";
 import { buildProductImageProxyUrl } from "@/lib/shop-utils";
 
 const defaultSettings: ShopSettingsRecord = {
@@ -16,6 +18,7 @@ const defaultSettings: ShopSettingsRecord = {
   wrapping_price: 0,
   delivery_fee: 0,
   delivery_time_text: "40 - 50 دقائق",
+  delivery_regions: [...SHOP_DEFAULT_DELIVERY_REGIONS].map((item) => ({ ...item })),
   updated_at: "",
 };
 
@@ -110,6 +113,7 @@ export function ShopSettingsManager() {
           wrapping_price: settings.wrapping_price,
           delivery_fee: settings.delivery_fee,
           delivery_time_text: settings.delivery_time_text,
+          delivery_regions: settings.delivery_regions,
         }),
       });
       const payload = (await response.json()) as { message?: string; settings?: ShopSettingsRecord };
@@ -125,6 +129,50 @@ export function ShopSettingsManager() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateRegion = (id: string, key: keyof ShopSettingsRecord["delivery_regions"][number], value: string | boolean) => {
+    setSettings((current) => ({
+      ...current,
+      delivery_regions: current.delivery_regions.map((region) =>
+        region.id === id
+          ? {
+              ...region,
+              [key]:
+                key === "fee" || key === "sort_order"
+                  ? Number(value || 0)
+                  : value,
+            }
+          : region,
+      ),
+    }));
+  };
+
+  const addRegion = () => {
+    setSettings((current) => ({
+      ...current,
+      delivery_regions: [
+        ...current.delivery_regions,
+        {
+          id: crypto.randomUUID(),
+          province: "",
+          fee: 0,
+          eta_text: "",
+          delivery_type: "توصيل",
+          sort_order: current.delivery_regions.length,
+          is_active: true,
+        },
+      ],
+    }));
+  };
+
+  const removeRegion = (id: string) => {
+    setSettings((current) => ({
+      ...current,
+      delivery_regions: current.delivery_regions
+        .filter((region) => region.id !== id)
+        .map((region, index) => ({ ...region, sort_order: index })),
+    }));
   };
 
   const removeQrImage = async () => {
@@ -202,6 +250,64 @@ export function ShopSettingsManager() {
                 setSettings((current) => ({ ...current, delivery_fee: Number(event.target.value || 0) }))
               }
             />
+
+            <div className="rounded-[24px] border border-ajn-line bg-white/[0.03] p-4">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white">توصيل المحافظات</h3>
+                  <p className="mt-1 text-xs text-ajn-muted">السعر والوقت ونوع التوصيل</p>
+                </div>
+                <Button variant="secondary" className="h-10 px-4 text-xs" onClick={addRegion}>
+                  <Plus className="h-4 w-4" />
+                  إضافة محافظة
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {settings.delivery_regions.map((region) => (
+                  <div key={region.id} className="rounded-[20px] border border-white/8 bg-black/25 p-3">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      <Input
+                        placeholder="المحافظة"
+                        value={region.province}
+                        onChange={(event) => updateRegion(region.id, "province", event.target.value)}
+                      />
+                      <Input
+                        placeholder="تكلفة التوصيل"
+                        inputMode="decimal"
+                        value={String(region.fee)}
+                        onChange={(event) => updateRegion(region.id, "fee", event.target.value)}
+                      />
+                      <Input
+                        placeholder="الوقت المتوقع"
+                        value={region.eta_text}
+                        onChange={(event) => updateRegion(region.id, "eta_text", event.target.value)}
+                      />
+                      <Input
+                        placeholder="نوع التوصيل"
+                        value={region.delivery_type}
+                        onChange={(event) => updateRegion(region.id, "delivery_type", event.target.value)}
+                      />
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <Select
+                        value={region.is_active ? "active" : "inactive"}
+                        onChange={(event) => updateRegion(region.id, "is_active", event.target.value === "active")}
+                        className="max-w-[180px]"
+                      >
+                        <option value="active" className="bg-black">مفعلة</option>
+                        <option value="inactive" className="bg-black">مخفية</option>
+                      </Select>
+
+                      <Button variant="danger" className="h-10 px-4 text-xs" onClick={() => removeRegion(region.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        حذف
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="flex flex-wrap gap-3">
               <label className="flex h-12 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-5 text-sm font-semibold text-white transition hover:bg-white/[0.08]">

@@ -9,7 +9,11 @@ import { AnimatedServicePanel } from "@/components/ui/animated-service-panel";
 import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
 import { PreviewImage } from "@/components/ui/preview-image";
-import { buildProductImageProxyUrl, getProductImagePresentation } from "@/lib/shop-utils";
+import {
+  buildProductImageProxyUrl,
+  getCustomizationSummaryEntries,
+  getProductImagePresentation,
+} from "@/lib/shop-utils";
 import { formatAmountWithCurrency } from "@/lib/utils";
 
 export function CartPageClient() {
@@ -79,6 +83,15 @@ export function CartPageClient() {
                             />
                           ) : null}
                           <span>{item.selected_color_name || item.selected_color_hex}</span>
+                        </div>
+                      ) : null}
+                      {getCustomizationSummaryEntries(item.customization).length ? (
+                        <div className="space-y-1 text-xs text-ajn-muted">
+                          {getCustomizationSummaryEntries(item.customization).map((entry) => (
+                            <p key={`${item.cart_key}-${entry.label}`}>
+                              {entry.label}: <span className="text-white">{entry.value}</span>
+                            </p>
+                          ))}
                         </div>
                       ) : null}
                       <p className="text-sm text-ajn-gold">{formatAmountWithCurrency(item.price)}</p>

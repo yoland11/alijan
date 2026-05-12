@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ShopCatalogManager } from "@/components/admin/shop-catalog-manager";
 import { ShopOrdersManager } from "@/components/admin/shop-orders-manager";
 import { ShopSettingsManager } from "@/components/admin/shop-settings-manager";
+import { PortfolioManager } from "@/components/admin/portfolio-manager";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { OrderModal } from "@/components/admin/order-modal";
 import { OrdersTable } from "@/components/admin/orders-table";
@@ -32,7 +33,9 @@ import {
 import type { OrderSchema } from "@/lib/validators";
 
 export function DashboardClient() {
-  const [adminSection, setAdminSection] = useState<"orders" | "catalog" | "shopOrders" | "settings">("orders");
+  const [adminSection, setAdminSection] = useState<"orders" | "catalog" | "shopOrders" | "portfolio" | "settings">(
+    "orders",
+  );
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -276,6 +279,9 @@ export function DashboardClient() {
               <SectionTab active={adminSection === "shopOrders"} onClick={() => setAdminSection("shopOrders")}>
                 طلبات المتجر
               </SectionTab>
+              <SectionTab active={adminSection === "portfolio"} onClick={() => setAdminSection("portfolio")}>
+                إدارة أعمالنا
+              </SectionTab>
               <SectionTab active={adminSection === "settings"} onClick={() => setAdminSection("settings")}>
                 إعدادات الدفع والتوصيل
               </SectionTab>
@@ -383,6 +389,7 @@ export function DashboardClient() {
 
           {adminSection === "catalog" ? <ShopCatalogManager /> : null}
           {adminSection === "shopOrders" ? <ShopOrdersManager /> : null}
+          {adminSection === "portfolio" ? <PortfolioManager /> : null}
           {adminSection === "settings" ? <ShopSettingsManager /> : null}
         </div>
       </div>

@@ -7,11 +7,13 @@ export function QuantityControl({
   onChange,
   className = "",
   size = "default",
+  disabled = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   className?: string;
   size?: "default" | "compact";
+  disabled?: boolean;
 }) {
   const compact = size === "compact";
 
@@ -25,9 +27,10 @@ export function QuantityControl({
         type="button"
         className={`inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-white transition hover:border-ajn-gold/45 hover:bg-white/[0.14] hover:text-ajn-gold ${
           compact ? "h-9 w-9" : "h-11 w-11"
-        }`}
+        } disabled:cursor-not-allowed disabled:opacity-45`}
         aria-label="تنقيص الكمية"
         onClick={() => onChange(Math.max(1, value - 1))}
+        disabled={disabled}
       >
         <Minus className={compact ? "h-4 w-4" : "h-4.5 w-4.5"} />
       </button>
@@ -44,9 +47,10 @@ export function QuantityControl({
         type="button"
         className={`inline-flex items-center justify-center rounded-2xl border border-ajn-gold/35 bg-ajn-gold/14 text-ajn-gold transition hover:bg-ajn-gold/20 hover:text-ajn-goldSoft ${
           compact ? "h-9 w-9" : "h-11 w-11"
-        }`}
+        } disabled:cursor-not-allowed disabled:opacity-45`}
         aria-label="زيادة الكمية"
         onClick={() => onChange(value + 1)}
+        disabled={disabled}
       >
         <Plus className={compact ? "h-4 w-4" : "h-4.5 w-4.5"} />
       </button>

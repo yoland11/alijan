@@ -28,15 +28,19 @@ export async function POST(request: Request) {
           ? "research-pdfs"
           : uploadKind === "product-image"
             ? "product-images"
-            : uploadKind === "payment-qr"
-              ? "payment-qr"
-              : "order-images",
+            : uploadKind === "product-video"
+              ? "product-videos"
+              : uploadKind === "portfolio-media"
+                ? "portfolio-media"
+                : uploadKind === "payment-qr"
+                  ? "payment-qr"
+                  : "order-images",
       allowedMimeTypes:
         uploadKind === "research-pdf" ? ["application/pdf"] : undefined,
       allowedExtensions: uploadKind === "research-pdf" ? ["pdf"] : undefined,
       maxSizeInMb: uploadKind === "research-pdf" ? 20 : 15,
-      optimizeImages: uploadKind !== "research-pdf",
-      createThumbnail: uploadKind === "product-image",
+      optimizeImages: uploadKind !== "research-pdf" && uploadKind !== "product-video",
+      createThumbnail: uploadKind === "product-image" || uploadKind === "portfolio-media",
       maxWidth: 1200,
       quality: 78,
       thumbnailWidth: 420,

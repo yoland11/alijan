@@ -1,6 +1,18 @@
 "use client";
 
-import { ArrowLeft, Eye, Gift, Heart, Package2, Search, ShoppingCart, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Eye,
+  Gift,
+  Heart,
+  Package2,
+  PlayCircle,
+  Search,
+  ShoppingCart,
+  Sparkles,
+  Video,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -9,6 +21,7 @@ import { toast } from "sonner";
 import { AnimatedServicePanel } from "@/components/ui/animated-service-panel";
 import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
+import { Input } from "@/components/ui/input";
 import {
   PreviewImage,
   PreviewGalleryLightbox,
@@ -16,8 +29,10 @@ import {
   type PreviewGalleryItem,
   type PreviewLightboxImage,
 } from "@/components/ui/preview-image";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   ProductColorOption,
+  ProductCustomizationPayload,
   ProductRecord,
   ShopCatalogPayload,
   ShopCategoryNode,
@@ -25,8 +40,13 @@ import type {
 import {
   buildProductImageProxyUrl,
   findCategoryBySlug,
+  getProductStockLabel,
   getPrimaryPreviewImage,
   getProductImagePresentation,
+  getVideoEmbedUrl,
+  hasProductCustomizationOptions,
+  isDirectVideoUrl,
+  isProductSoldOut,
 } from "@/lib/shop-utils";
 import { cn, formatAmountWithCurrency } from "@/lib/utils";
 import { QuantityControl } from "@/components/shop/quantity-control";
@@ -39,6 +59,51 @@ const iconMap: Record<string, typeof Package2> = {
   كوزمتك: Sparkles,
 };
 
+const PRODUCT_CUSTOMIZATION_CONFIG = [
+  {
+    optionKey: "enable_name",
+    payloadKey: "custom_name",
+    label: "كتابة اسم",
+    placeholder: "اكتب الاسم",
+    fieldType: "input",
+  },
+  {
+    optionKey: "enable_message",
+    payloadKey: "gift_message",
+    label: "رسالة داخل البوكس",
+    placeholder: "اكتب الرسالة",
+    fieldType: "textarea",
+  },
+  {
+    optionKey: "enable_wrapping_note",
+    payloadKey: "wrapping_note",
+    label: "ملاحظة التغليف",
+    placeholder: "ملاحظة التغليف",
+    fieldType: "textarea",
+  },
+  {
+    optionKey: "enable_special_color",
+    payloadKey: "special_color",
+    label: "لون خاص",
+    placeholder: "اكتب اللون",
+    fieldType: "input",
+  },
+  {
+    optionKey: "enable_occasion_date",
+    payloadKey: "occasion_date",
+    label: "تاريخ المناسبة",
+    placeholder: "",
+    fieldType: "date",
+  },
+  {
+    optionKey: "enable_customer_image",
+    payloadKey: "customer_image_url",
+    label: "رفع صورة",
+    placeholder: "",
+    fieldType: "file",
+  },
+] as const;
+
 export function ServicesPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -47,6 +112,12 @@ export function ServicesPageClient() {
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [visibleProductCounts, setVisibleProductCounts] = useState<Record<string, number>>({});
+  const [customizations, setCustomizations] = useState<Record<string, ProductCustomizationPayload>>({});
+  const [uploadingCustomizationImageFor, setUploadingCustomizationImageFor] = useState<string | null>(null);
+  const [activeVideoProduct, setActiveVideoProduct] = useState<{
+    product: ProductRecord;
+    sectionKey: string;
+  } | null>(null);
   const [activePreviewImage, setActivePreviewImage] = useState<(PreviewLightboxImage & { sectionKey: string }) | null>(
     null,
   );
@@ -61,6 +132,24 @@ export function ServicesPageClient() {
   const rootSlug = searchParams.get("main");
   const subSlug = searchParams.get("sub");
   const visibleKey = `${rootSlug ?? ""}:${subSlug ?? ""}`;
+  const rootCategory = useMemo(
+    () => (catalog ? findCategoryBySlug(catalog.categories, rootSlug) : null),
+    [catalog, rootSlug],
+  );
+
+  const subCategory = useMemo(
+    () => (rootCategory ? findCategoryBySlug(rootCategory.children, subSlug) : null),
+    [rootCategory, subSlug],
+  );
+
+  const currentProducts = useMemo(() => subCategory?.products ?? [], [subCategory]);
+  const visibleProducts = visibleProductCounts[visibleKey] ?? 12;
+  const displayedProducts = currentProducts.slice(0, visibleProducts);
+  const visiblePreviewImage =
+    activePreviewImage && activePreviewImage.sectionKey === visibleKey ? activePreviewImage : null;
+  const visibleGallery = activeGallery && activeGallery.sectionKey === visibleKey ? activeGallery : null;
+  const visibleVideoProduct =
+    activeVideoProduct && activeVideoProduct.sectionKey === visibleKey ? activeVideoProduct.product : null;
 
   useEffect(() => {
     const load = async () => {
@@ -84,23 +173,6 @@ export function ServicesPageClient() {
     void load();
   }, []);
 
-  const rootCategory = useMemo(
-    () => (catalog ? findCategoryBySlug(catalog.categories, rootSlug) : null),
-    [catalog, rootSlug],
-  );
-
-  const subCategory = useMemo(
-    () => (rootCategory ? findCategoryBySlug(rootCategory.children, subSlug) : null),
-    [rootCategory, subSlug],
-  );
-
-  const currentProducts = subCategory?.products ?? [];
-  const visibleProducts = visibleProductCounts[visibleKey] ?? 12;
-  const displayedProducts = currentProducts.slice(0, visibleProducts);
-  const visiblePreviewImage =
-    activePreviewImage && activePreviewImage.sectionKey === visibleKey ? activePreviewImage : null;
-  const visibleGallery = activeGallery && activeGallery.sectionKey === visibleKey ? activeGallery : null;
-
   const setQuantity = (productId: string, value: number) => {
     setQuantities((current) => ({
       ...current,
@@ -111,6 +183,85 @@ export function ServicesPageClient() {
   const getQuantity = (productId: string) => quantities[productId] ?? 1;
   const getSelectedColor = (product: ProductRecord) =>
     selectedColors[product.id] ?? product.color_options[0] ?? null;
+  const getCustomization = (product: ProductRecord) =>
+    customizations[product.id] ?? {
+      custom_name: "",
+      gift_message: "",
+      wrapping_note: "",
+      special_color: "",
+      occasion_date: "",
+      customer_image_url: "",
+    };
+
+  const updateCustomizationValue = (
+    productId: string,
+    key: keyof ProductCustomizationPayload,
+    value: string,
+  ) => {
+    setCustomizations((current) => {
+      const previous = current[productId] ?? {
+        custom_name: "",
+        gift_message: "",
+        wrapping_note: "",
+        special_color: "",
+        occasion_date: "",
+        customer_image_url: "",
+      };
+
+      return {
+        ...current,
+        [productId]: {
+          ...previous,
+          [key]: value,
+        },
+      };
+    });
+  };
+
+  const uploadCustomerImage = async (productId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("files", file);
+    const loadingToast = toast.loading("جاري رفع الصورة...");
+    setUploadingCustomizationImageFor(productId);
+
+    try {
+      const response = await fetch("/api/shop/uploads?kind=customer-image", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { message?: string; files?: { url: string }[] };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر رفع الصورة.");
+      }
+
+      const uploadedUrl = payload.files?.[0]?.url ?? "";
+      if (!uploadedUrl) {
+        throw new Error("تعذر رفع الصورة.");
+      }
+
+      setCustomizations((current) => ({
+        ...current,
+        [productId]: {
+          ...(current[productId] ?? {
+            custom_name: "",
+            gift_message: "",
+            wrapping_note: "",
+            special_color: "",
+            occasion_date: "",
+            customer_image_url: "",
+          }),
+          customer_image_url: uploadedUrl,
+        },
+      }));
+      toast.success("تم رفع الصورة.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر رفع الصورة.");
+    } finally {
+      setUploadingCustomizationImageFor(null);
+      toast.dismiss(loadingToast);
+    }
+  };
 
   return (
     <div className="page-shell pb-24 pt-6 sm:pt-10">
@@ -123,6 +274,13 @@ export function ServicesPageClient() {
               <h1 className="text-3xl font-bold text-white sm:text-4xl">خدماتنا</h1>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/our-work"
+                className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.05] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+              >
+                <Eye className="h-4 w-4 text-ajn-gold" />
+                أعمالنا
+              </Link>
               <Link
                 href="/cart"
                 className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.05] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
@@ -271,7 +429,10 @@ export function ServicesPageClient() {
                   {displayedProducts.map((product: ProductRecord, index) => {
                     const imagePresentation = getProductImagePresentation(product);
                     const selectedColor = getSelectedColor(product);
+                    const customization = getCustomization(product);
                     const primaryPreviewImage = getPrimaryPreviewImage(product);
+                    const supportsCustomization = hasProductCustomizationOptions(product.customization_options);
+                    const soldOut = isProductSoldOut(product);
                     const previewGalleryItems = product.preview_images
                       .map((image) => ({
                         id: image.id,
@@ -287,38 +448,57 @@ export function ServicesPageClient() {
                         key={product.id}
                         className="group surface-panel glass-hover overflow-hidden [transform-style:preserve-3d]"
                       >
-                        <PreviewImage
-                          src={buildProductImageProxyUrl(
-                            primaryPreviewImage?.thumbnail_url || product.thumbnail_url || product.image_url,
-                          )}
-                          previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || product.image_url)}
-                          alt={product.name}
-                          priority={index < 4}
-                          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 25vw"
-                          containerClassName="h-[17.5rem] w-full border-b border-white/6 bg-[radial-gradient(circle_at_top,#ffffff12,transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 sm:h-[18.5rem] lg:h-[19rem]"
-                          imageClassName="transition duration-500"
-                          imageStyle={{
-                            objectFit: imagePresentation.objectFit,
-                            objectPosition: imagePresentation.objectPosition,
-                            transform: imagePresentation.transform,
-                            transformOrigin: imagePresentation.transformOrigin,
-                          }}
-                          previewImageStyle={{
-                            objectFit: imagePresentation.objectFit,
-                            objectPosition: imagePresentation.objectPosition,
-                          }}
-                          onPreviewRequest={(image) =>
-                            setActivePreviewImage({
-                              ...image,
-                              sectionKey: visibleKey,
-                            })
-                          }
-                          fallback={
-                            <div className="flex h-full items-center justify-center text-ajn-gold">
-                              <Package2 className="h-10 w-10" />
-                            </div>
-                          }
-                        />
+                        <div className="relative">
+                          <PreviewImage
+                            src={buildProductImageProxyUrl(
+                              primaryPreviewImage?.thumbnail_url || product.thumbnail_url || product.image_url,
+                            )}
+                            previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || product.image_url)}
+                            alt={product.name}
+                            priority={index < 4}
+                            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 25vw"
+                            containerClassName="h-[17.5rem] w-full border-b border-white/6 bg-[radial-gradient(circle_at_top,#ffffff12,transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 sm:h-[18.5rem] lg:h-[19rem]"
+                            imageClassName="transition duration-500"
+                            imageStyle={{
+                              objectFit: imagePresentation.objectFit,
+                              objectPosition: imagePresentation.objectPosition,
+                              transform: imagePresentation.transform,
+                              transformOrigin: imagePresentation.transformOrigin,
+                            }}
+                            previewImageStyle={{
+                              objectFit: imagePresentation.objectFit,
+                              objectPosition: imagePresentation.objectPosition,
+                            }}
+                            onPreviewRequest={(image) =>
+                              setActivePreviewImage({
+                                ...image,
+                                sectionKey: visibleKey,
+                              })
+                            }
+                            fallback={
+                              <div className="flex h-full items-center justify-center text-ajn-gold">
+                                <Package2 className="h-10 w-10" />
+                              </div>
+                            }
+                          />
+                          <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+                            <span
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-[11px] font-semibold shadow-[0_12px_28px_rgba(0,0,0,0.18)]",
+                                soldOut
+                                  ? "border-red-400/30 bg-red-500/18 text-red-100"
+                                  : "border-ajn-gold/25 bg-black/60 text-ajn-goldSoft",
+                              )}
+                            >
+                              {getProductStockLabel(product)}
+                            </span>
+                            {product.video_url ? (
+                              <span className="rounded-full border border-white/12 bg-black/55 px-3 py-1 text-[11px] font-semibold text-white">
+                                فيديو
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
                         <div className="space-y-3 p-4 sm:p-[18px]">
                           <div className="space-y-1.5">
                             <h3 className="text-base font-bold text-white sm:text-lg">{product.name}</h3>
@@ -371,6 +551,111 @@ export function ServicesPageClient() {
                               </div>
                             </div>
                           ) : null}
+                          {supportsCustomization ? (
+                            <div className="space-y-3 rounded-[22px] border border-white/8 bg-black/20 p-3.5">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-semibold text-white">تخصيص المنتج</p>
+                                <span className="text-[11px] text-ajn-goldSoft">اختياري</span>
+                              </div>
+                              <div className="space-y-3">
+                                {PRODUCT_CUSTOMIZATION_CONFIG.filter(
+                                  (item) => product.customization_options[item.optionKey],
+                                ).map((field) => {
+                                  if (field.fieldType === "textarea") {
+                                    return (
+                                      <Textarea
+                                        key={`${product.id}-${field.payloadKey}`}
+                                        placeholder={field.placeholder}
+                                        className="min-h-[80px] rounded-[18px] border-white/8 bg-white/[0.03] text-sm text-white placeholder:text-ajn-muted"
+                                        value={customization[field.payloadKey]}
+                                        onChange={(event) =>
+                                          updateCustomizationValue(product.id, field.payloadKey, event.target.value)
+                                        }
+                                      />
+                                    );
+                                  }
+
+                                  if (field.fieldType === "date") {
+                                    return (
+                                      <div key={`${product.id}-${field.payloadKey}`} className="space-y-2">
+                                        <p className="text-[12px] font-semibold text-ajn-muted">{field.label}</p>
+                                        <Input
+                                          type="date"
+                                          value={customization[field.payloadKey]}
+                                          onChange={(event) =>
+                                            updateCustomizationValue(product.id, field.payloadKey, event.target.value)
+                                          }
+                                          className="rounded-[18px] border-white/8 bg-white/[0.03] text-sm text-white"
+                                        />
+                                      </div>
+                                    );
+                                  }
+
+                                  if (field.fieldType === "file") {
+                                    return (
+                                      <div key={`${product.id}-${field.payloadKey}`} className="space-y-2">
+                                        <div className="flex items-center justify-between gap-3">
+                                          <p className="text-[12px] font-semibold text-ajn-muted">{field.label}</p>
+                                          {customization.customer_image_url ? (
+                                            <button
+                                              type="button"
+                                              className="text-[11px] font-semibold text-red-200 transition hover:text-red-100"
+                                              onClick={() =>
+                                                updateCustomizationValue(product.id, "customer_image_url", "")
+                                              }
+                                            >
+                                              حذف
+                                            </button>
+                                          ) : null}
+                                        </div>
+                                        <label className="flex h-10 cursor-pointer items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.03] text-xs font-semibold text-white transition hover:border-ajn-gold/35 hover:bg-white/[0.05]">
+                                          {uploadingCustomizationImageFor === product.id
+                                            ? "جاري الرفع..."
+                                            : customization.customer_image_url
+                                              ? "تغيير الصورة"
+                                              : "رفع صورة"}
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(event) => {
+                                              const file = event.target.files?.[0];
+                                              if (file) {
+                                                void uploadCustomerImage(product.id, file);
+                                              }
+                                            }}
+                                          />
+                                        </label>
+                                        {customization.customer_image_url ? (
+                                          <PreviewImage
+                                            src={buildProductImageProxyUrl(customization.customer_image_url)}
+                                            previewSrc={buildProductImageProxyUrl(customization.customer_image_url)}
+                                            alt={`${product.name} تخصيص`}
+                                            containerClassName="h-24 rounded-[18px] border border-white/8 bg-white/[0.03] p-2"
+                                            imageClassName="object-contain"
+                                          />
+                                        ) : null}
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <div key={`${product.id}-${field.payloadKey}`} className="space-y-2">
+                                      <p className="text-[12px] font-semibold text-ajn-muted">{field.label}</p>
+                                      <Input
+                                        placeholder={field.placeholder}
+                                        value={customization[field.payloadKey]}
+                                        onChange={(event) =>
+                                          updateCustomizationValue(product.id, field.payloadKey, event.target.value)
+                                        }
+                                        className="rounded-[18px] border-white/8 bg-white/[0.03] text-sm text-white placeholder:text-ajn-muted"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                           {hasPreviewGallery ? (
                             <button
                               type="button"
@@ -389,18 +674,32 @@ export function ServicesPageClient() {
                               معاينة المنتج
                             </button>
                           ) : null}
+                          {product.video_url ? (
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoProduct({ product, sectionKey: visibleKey })}
+                              className="inline-flex items-center gap-2 text-sm font-semibold text-white transition hover:text-ajn-goldSoft"
+                            >
+                              <PlayCircle className="h-4 w-4 text-ajn-gold" />
+                              مشاهدة الفيديو
+                            </button>
+                          ) : null}
                           <div className="flex flex-col gap-2.5">
                             <QuantityControl
                               className="w-full"
                               size="compact"
                               value={getQuantity(product.id)}
                               onChange={(value) => setQuantity(product.id, value)}
+                              disabled={soldOut}
                             />
                             <Button
                               className="h-10 w-full rounded-2xl text-sm"
-                              onClick={() => addItem(product, getQuantity(product.id), selectedColor)}
+                              disabled={soldOut}
+                              onClick={() =>
+                                addItem(product, getQuantity(product.id), selectedColor, customization)
+                              }
                             >
-                              إضافة للسلة
+                              {soldOut ? "نفذت الكمية" : "إضافة للسلة"}
                             </Button>
                           </div>
                         </div>
@@ -443,6 +742,47 @@ export function ServicesPageClient() {
           initialIndex={visibleGallery?.initialIndex ?? 0}
           onClose={() => setActiveGallery(null)}
         />
+        {visibleVideoProduct ? (
+          <div
+            className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-md sm:px-6 sm:py-8"
+            onClick={() => setActiveVideoProduct(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveVideoProduct(null)}
+              className="absolute left-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white transition hover:bg-white/15"
+              aria-label="إغلاق"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div
+              className="relative w-full max-w-5xl overflow-hidden rounded-[30px] border border-ajn-line bg-[#070707]/95 p-4 shadow-gold sm:p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-ajn-goldSoft">فيديو المنتج</p>
+                  <h3 className="text-xl font-bold text-white">{visibleVideoProduct.name}</h3>
+                </div>
+                <Video className="h-5 w-5 text-ajn-gold" />
+              </div>
+              {isDirectVideoUrl(visibleVideoProduct.video_url) ? (
+                <video controls autoPlay className="max-h-[78vh] w-full rounded-[24px] bg-black">
+                  <source src={buildProductImageProxyUrl(visibleVideoProduct.video_url)} />
+                </video>
+              ) : (
+                <iframe
+                  src={getVideoEmbedUrl(visibleVideoProduct.video_url)}
+                  className="h-[72vh] w-full rounded-[24px] border border-white/10 bg-black"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  title={visibleVideoProduct.name}
+                />
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

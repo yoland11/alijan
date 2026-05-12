@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ShopInvoiceActions } from "@/components/shop/shop-invoice-actions";
 import { getAdminSession } from "@/lib/auth";
 import { getShopOrderByCode } from "@/lib/server/shop";
-import { getShopPaymentMethodLabel } from "@/lib/shop-utils";
+import { getCustomizationSummaryEntries, getShopPaymentMethodLabel } from "@/lib/shop-utils";
 import { formatAmountWithCurrency, formatDateTime } from "@/lib/utils";
 
 interface PageProps {
@@ -50,7 +50,11 @@ export default async function ShopInvoicePage({ params }: PageProps) {
             <InvoiceCell label="اسم الزبون" value={order.customer_name} />
             <InvoiceCell label="رقم الهاتف" value={order.phone} />
             <InvoiceCell label="التاريخ" value={formatDateTime(order.created_at)} />
-            <InvoiceCell label="العنوان" value={`${order.city} - ${order.address}`} className="sm:col-span-2 lg:col-span-2" />
+            <InvoiceCell label="المحافظة" value={order.province || order.city} />
+            <InvoiceCell label="المنطقة" value={order.district || "—"} />
+            <InvoiceCell label="العنوان" value={`${order.address}`} className="sm:col-span-2 lg:col-span-2" />
+            <InvoiceCell label="نوع التوصيل" value={order.delivery_type || "توصيل"} />
+            <InvoiceCell label="الوقت المتوقع" value={order.delivery_eta || "—"} />
             <InvoiceCell label="طريقة الدفع" value={getShopPaymentMethodLabel(order.payment_method)} />
           </div>
 
@@ -75,6 +79,11 @@ export default async function ShopInvoicePage({ params }: PageProps) {
                             اللون: {item.selected_color_name || item.selected_color_hex}
                           </p>
                         ) : null}
+                        {getCustomizationSummaryEntries(item.customization).map((entry) => (
+                          <p key={`${item.id}-${entry.label}`} className="text-xs font-medium text-black/70">
+                            {entry.label}: {entry.value}
+                          </p>
+                        ))}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-black">{item.quantity}</td>

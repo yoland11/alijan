@@ -9,7 +9,11 @@ import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { SHOP_ORDER_STATUSES, SHOP_PAYMENT_METHOD_LABELS } from "@/lib/shop-constants";
 import type { ShopOrderRecord } from "@/lib/shop-types";
-import { buildProductImageProxyUrl, buildShopOrderWhatsAppUrl } from "@/lib/shop-utils";
+import {
+  buildProductImageProxyUrl,
+  buildShopOrderWhatsAppUrl,
+  getCustomizationSummaryEntries,
+} from "@/lib/shop-utils";
 import { formatAmountWithCurrency, formatDateTime } from "@/lib/utils";
 
 export function ShopOrdersManager() {
@@ -57,7 +61,7 @@ export function ShopOrdersManager() {
         throw new Error(payload.message || "تعذر تحديث الحالة.");
       }
 
-      toast.success("تم تحديث الحالة.");
+      toast.success(payload.message || "تم تحديث الحالة.");
       await loadOrders();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تحديث الحالة.");
@@ -93,7 +97,7 @@ export function ShopOrdersManager() {
   };
 
   const removeOrder = async (orderId: string) => {
-    if (!window.confirm("حذف الطلب؟")) {
+    if (!window.confirm("سيتم حذف الطلب وإرجاع الكميات للمخزن، هل أنت متأكد؟")) {
       return;
     }
 
@@ -105,7 +109,7 @@ export function ShopOrdersManager() {
         throw new Error(payload.message || "تعذر حذف الطلب.");
       }
 
-      toast.success("تم حذف الطلب.");
+      toast.success(payload.message || "تم حذف الطلب.");
       await loadOrders();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر حذف الطلب.");
@@ -171,8 +175,11 @@ export function ShopOrdersManager() {
               <div className="grid gap-2 text-sm text-ajn-muted sm:grid-cols-2">
                 <p>الهاتف: {order.phone}</p>
                 <p>التتبع: {order.order_code}</p>
-                <p>المدينة: {order.city}</p>
+                <p>المحافظة: {order.province || order.city}</p>
+                <p>المنطقة: {order.district || "—"}</p>
                 <p>العنوان: {order.address}</p>
+                <p>نوع التوصيل: {order.delivery_type || "توصيل"}</p>
+                <p>الوقت المتوقع: {order.delivery_eta || "—"}</p>
                 <p>الطلب: {formatDateTime(order.created_at)}</p>
                 <p>الدفع: {SHOP_PAYMENT_METHOD_LABELS[order.payment_method]}</p>
                 <p>التغليف: {order.wrapping_enabled ? "نعم" : "لا"}</p>
@@ -276,6 +283,15 @@ export function ShopOrdersManager() {
                     <p className="text-sm text-ajn-muted">
                       {formatAmountWithCurrency(item.price)} x {item.quantity}
                     </p>
+                    {getCustomizationSummaryEntries(item.customization).length ? (
+                      <div className="mt-2 space-y-1 text-xs text-ajn-muted">
+                        {getCustomizationSummaryEntries(item.customization).map((entry) => (
+                          <p key={`${item.id}-${entry.label}`}>
+                            {entry.label}: <span className="text-white">{entry.value}</span>
+                          </p>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <p className="text-sm font-semibold text-ajn-gold">{formatAmountWithCurrency(item.total)}</p>
                 </div>

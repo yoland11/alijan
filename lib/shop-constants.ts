@@ -56,6 +56,47 @@ export const SHOP_PRODUCT_IMAGE_POSITIONS = [
   "left center",
 ] as const;
 
+export const SHOP_PAYMENT_METHOD_LABELS: Record<(typeof SHOP_PAYMENT_METHODS)[number], string> = {
+  cash: "نقداً",
+  mastercard: "ماستر كارد",
+};
+
+export const SHOP_ORDER_STATUSES = [
+  "طلب جديد",
+  "قيد التجهيز",
+  "جاهز للتوصيل",
+  "تم التسليم",
+  "ملغي",
+] as const;
+
+export const SHOP_ORDER_STATUS_STEPS = [
+  {
+    value: "طلب جديد",
+    label: "طلب جديد",
+    description: "تم استلام الطلب.",
+  },
+  {
+    value: "قيد التجهيز",
+    label: "قيد التجهيز",
+    description: "يتم تجهيز الطلب.",
+  },
+  {
+    value: "جاهز للتوصيل",
+    label: "جاهز للتوصيل",
+    description: "الطلب جاهز للتوصيل.",
+  },
+  {
+    value: "تم التسليم",
+    label: "تم التسليم",
+    description: "تم تسليم الطلب.",
+  },
+  {
+    value: "ملغي",
+    label: "ملغي",
+    description: "تم إلغاء الطلب.",
+  },
+] as const;
+
 export const SHOP_PRODUCT_COLOR_LIBRARY = [
   { id: "black", color_name: "أسود", color_hex: "#000000", sort_order: 0 },
   { id: "white", color_name: "أبيض", color_hex: "#FFFFFF", sort_order: 1 },
@@ -99,45 +140,61 @@ export const SHOP_PRODUCT_COLOR_LIBRARY = [
   { id: "creamy", color_name: "كريمي", color_hex: "#FFF7D6", sort_order: 39 },
 ] as const;
 
-export const SHOP_PAYMENT_METHOD_LABELS: Record<(typeof SHOP_PAYMENT_METHODS)[number], string> = {
-  cash: "نقداً",
-  mastercard: "ماستر كارد",
-};
-
-export const SHOP_ORDER_STATUSES = [
-  "طلب جديد",
-  "قيد التجهيز",
-  "جاهز للتوصيل",
-  "تم التسليم",
-  "ملغي",
+export const SHOP_DEFAULT_DELIVERY_REGIONS = [
+  {
+    id: "kirkuk",
+    province: "كركوك",
+    fee: 0,
+    eta_text: "نفس اليوم",
+    delivery_type: "مجاني",
+    sort_order: 0,
+    is_active: true,
+  },
+  {
+    id: "erbil",
+    province: "أربيل",
+    fee: 5000,
+    eta_text: "خلال 24 ساعة",
+    delivery_type: "توصيل سريع",
+    sort_order: 1,
+    is_active: true,
+  },
+  {
+    id: "baghdad",
+    province: "بغداد",
+    fee: 7000,
+    eta_text: "24 - 48 ساعة",
+    delivery_type: "توصيل بين المحافظات",
+    sort_order: 2,
+    is_active: true,
+  },
+  {
+    id: "other-provinces",
+    province: "باقي المحافظات",
+    fee: 8000,
+    eta_text: "حسب المنطقة",
+    delivery_type: "توصيل خارجي",
+    sort_order: 3,
+    is_active: true,
+  },
 ] as const;
 
-export const SHOP_ORDER_STATUS_STEPS = [
-  {
-    value: "طلب جديد",
-    label: "طلب جديد",
-    description: "تم استلام الطلب.",
-  },
-  {
-    value: "قيد التجهيز",
-    label: "قيد التجهيز",
-    description: "يتم تجهيز الطلب.",
-  },
-  {
-    value: "جاهز للتوصيل",
-    label: "جاهز للتوصيل",
-    description: "الطلب جاهز للتوصيل.",
-  },
-  {
-    value: "تم التسليم",
-    label: "تم التسليم",
-    description: "تم تسليم الطلب.",
-  },
-  {
-    value: "ملغي",
-    label: "ملغي",
-    description: "تم إلغاء الطلب.",
-  },
+export const SHOP_CUSTOMIZATION_FIELDS = [
+  { key: "enable_name", label: "كتابة اسم على الهدية" },
+  { key: "enable_message", label: "رسالة داخل البوكس" },
+  { key: "enable_wrapping_note", label: "ملاحظة تغليف" },
+  { key: "enable_special_color", label: "لون خاص" },
+  { key: "enable_occasion_date", label: "تاريخ مناسبة" },
+  { key: "enable_customer_image", label: "رفع صورة من الزبون" },
+] as const;
+
+export const PORTFOLIO_CATEGORIES = [
+  "تجهيزات",
+  "هدايا",
+  "ورود",
+  "كوشات",
+  "تخرج",
+  "مناسبات",
 ] as const;
 
 export const SHOP_DEFAULT_SETTINGS = {
@@ -145,4 +202,6 @@ export const SHOP_DEFAULT_SETTINGS = {
   wrapping_price: 0,
   delivery_fee: 0,
   delivery_time_text: "40 - 50 دقائق",
+  delivery_regions: SHOP_DEFAULT_DELIVERY_REGIONS,
 } as const;
+

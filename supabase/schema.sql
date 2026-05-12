@@ -104,6 +104,9 @@ create table if not exists public.products (
   image_zoom numeric(6,2) not null default 1,
   color_options jsonb not null default '[]'::jsonb,
   preview_images jsonb not null default '[]'::jsonb,
+  video_url text not null default ''::text,
+  stock_quantity integer,
+  customization_options jsonb not null default '{}'::jsonb,
   is_active boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default timezone('utc', now()),
@@ -136,7 +139,10 @@ alter table public.products
   add column if not exists image_position text not null default 'center center',
   add column if not exists image_zoom numeric(6,2) not null default 1,
   add column if not exists color_options jsonb not null default '[]'::jsonb,
-  add column if not exists preview_images jsonb not null default '[]'::jsonb;
+  add column if not exists preview_images jsonb not null default '[]'::jsonb,
+  add column if not exists video_url text not null default '',
+  add column if not exists stock_quantity integer,
+  add column if not exists customization_options jsonb not null default '{}'::jsonb;
 
 alter table public.service_categories
   add column if not exists thumbnail_url text not null default '';
@@ -148,7 +154,11 @@ create table if not exists public.shop_orders (
   customer_name text not null,
   phone text not null,
   city text not null,
+  province text not null default ''::text,
+  district text not null default ''::text,
   address text not null,
+  delivery_type text not null default ''::text,
+  delivery_eta text not null default ''::text,
   driver_notes text not null default ''::text,
   location_lat numeric(10,7),
   location_lng numeric(10,7),
@@ -160,6 +170,7 @@ create table if not exists public.shop_orders (
   subtotal numeric(12,2) not null default 0,
   total numeric(12,2) not null default 0,
   status text not null check (status in ('طلب جديد', 'قيد التجهيز', 'جاهز للتوصيل', 'تم التسليم', 'ملغي')),
+  stock_restored boolean not null default false,
   printed_at timestamptz,
   print_status text not null default 'pending' check (print_status in ('pending', 'printed', 'failed')),
   print_attempts integer not null default 0,
@@ -170,6 +181,11 @@ create table if not exists public.shop_orders (
 alter table public.shop_orders
   add column if not exists order_code text,
   add column if not exists phone_last4 text,
+  add column if not exists province text not null default '',
+  add column if not exists district text not null default '',
+  add column if not exists delivery_type text not null default '',
+  add column if not exists delivery_eta text not null default '',
+  add column if not exists stock_restored boolean not null default false,
   add column if not exists printed_at timestamptz,
   add column if not exists print_status text not null default 'pending',
   add column if not exists print_attempts integer not null default 0;
@@ -189,6 +205,7 @@ create table if not exists public.shop_order_items (
   product_image text not null default ''::text,
   selected_color_name text not null default ''::text,
   selected_color_hex text not null default ''::text,
+  customization jsonb not null default '{}'::jsonb,
   quantity integer not null default 1,
   price numeric(12,2) not null default 0,
   total numeric(12,2) not null default 0,
@@ -197,7 +214,8 @@ create table if not exists public.shop_order_items (
 
 alter table public.shop_order_items
   add column if not exists selected_color_name text not null default '',
-  add column if not exists selected_color_hex text not null default '';
+  add column if not exists selected_color_hex text not null default '',
+  add column if not exists customization jsonb not null default '{}'::jsonb;
 
 create table if not exists public.settings (
   id uuid primary key default gen_random_uuid(),
@@ -205,6 +223,35 @@ create table if not exists public.settings (
   wrapping_price numeric(12,2) not null default 0,
   delivery_fee numeric(12,2) not null default 0,
   delivery_time_text text not null default '40 - 50 دقائق'::text,
+  delivery_regions jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.settings
+  add column if not exists delivery_regions jsonb not null default '[]'::jsonb;
+
+create table if not exists public.product_reviews (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products(id) on delete cascade,
+  customer_name text not null default ''::text,
+  rating integer not null default 5 check (rating between 1 and 5),
+  comment text not null default ''::text,
+  image_url text not null default ''::text,
+  approved boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.portfolio_entries (
+  id uuid primary key default gen_random_uuid(),
+  title text not null default ''::text,
+  category text not null default 'مناسبات'::text,
+  media_type text not null default 'image'::text check (media_type in ('image', 'video')),
+  media_url text not null default ''::text,
+  thumbnail_url text not null default ''::text,
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
@@ -212,6 +259,8 @@ create index if not exists service_categories_parent_idx on public.service_categ
 create index if not exists service_categories_active_sort_idx on public.service_categories (is_active, sort_order);
 create index if not exists products_category_idx on public.products (category_id);
 create index if not exists products_active_sort_idx on public.products (is_active, sort_order);
+create index if not exists product_reviews_product_idx on public.product_reviews (product_id, approved, created_at desc);
+create index if not exists portfolio_entries_active_sort_idx on public.portfolio_entries (is_active, sort_order);
 create index if not exists shop_orders_status_idx on public.shop_orders (status);
 create index if not exists shop_orders_created_at_idx on public.shop_orders (created_at desc);
 create index if not exists shop_order_items_order_id_idx on public.shop_order_items (order_id);
@@ -248,6 +297,18 @@ execute function public.set_row_updated_at();
 drop trigger if exists set_settings_updated_at on public.settings;
 create trigger set_settings_updated_at
 before update on public.settings
+for each row
+execute function public.set_row_updated_at();
+
+drop trigger if exists set_product_reviews_updated_at on public.product_reviews;
+create trigger set_product_reviews_updated_at
+before update on public.product_reviews
+for each row
+execute function public.set_row_updated_at();
+
+drop trigger if exists set_portfolio_entries_updated_at on public.portfolio_entries;
+create trigger set_portfolio_entries_updated_at
+before update on public.portfolio_entries
 for each row
 execute function public.set_row_updated_at();
 
