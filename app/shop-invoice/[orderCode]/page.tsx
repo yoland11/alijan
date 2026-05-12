@@ -67,7 +67,16 @@ export default async function ShopInvoicePage({ params }: PageProps) {
               <tbody>
                 {order.items.map((item) => (
                   <tr key={item.id} className="border-t border-black/10">
-                    <td className="px-4 py-3 font-medium text-black">{item.product_name}</td>
+                    <td className="px-4 py-3 font-medium text-black">
+                      <div className="space-y-1">
+                        <p>{item.product_name}</p>
+                        {item.selected_color_name || item.selected_color_hex ? (
+                          <p className="text-xs font-medium text-black/70">
+                            اللون: {item.selected_color_name || item.selected_color_hex}
+                          </p>
+                        ) : null}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-black">{item.quantity}</td>
                     <td className="px-4 py-3 text-black">{formatAmountWithCurrency(item.price)}</td>
                     <td className="px-4 py-3 font-semibold text-black">{formatAmountWithCurrency(item.total)}</td>

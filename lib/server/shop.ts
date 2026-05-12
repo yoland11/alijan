@@ -464,11 +464,22 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
 
     const quantity = Math.max(1, item.quantity);
     const total = product.price * quantity;
+    const selectedColor =
+      item.selected_color_hex || item.selected_color_name
+        ? product.color_options.find(
+            (color) =>
+              (item.selected_color_hex && color.color_hex === item.selected_color_hex) ||
+              (item.selected_color_name && color.color_name === item.selected_color_name),
+          ) ?? null
+        : null;
 
     return {
       product,
       quantity,
       total,
+      selectedColor,
+      selectedColorName: selectedColor?.color_name ?? item.selected_color_name ?? "",
+      selectedColorHex: selectedColor?.color_hex ?? item.selected_color_hex ?? "",
     };
   });
 
@@ -532,6 +543,8 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
         product_id: item.product.id,
         product_name: item.product.name,
         product_image: item.product.image_url,
+        selected_color_name: item.selectedColorName,
+        selected_color_hex: item.selectedColorHex,
         quantity: item.quantity,
         price: item.product.price,
         total: item.total,

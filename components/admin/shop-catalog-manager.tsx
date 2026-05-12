@@ -1,6 +1,19 @@
 "use client";
 
-import { Eye, EyeOff, ImagePlus, Package2, Pencil, Save, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Eye,
+  EyeOff,
+  ImagePlus,
+  Package2,
+  Palette,
+  Pencil,
+  Plus,
+  Save,
+  Star,
+  Trash2,
+} from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -12,15 +25,23 @@ import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  SHOP_PRODUCT_COLOR_LIBRARY,
   SHOP_PRODUCT_IMAGE_FITS,
   SHOP_PRODUCT_IMAGE_POSITIONS,
 } from "@/lib/shop-constants";
-import type { ProductRecord, ServiceCategoryRecord, ShopSettingsRecord } from "@/lib/shop-types";
+import type {
+  ProductColorOption,
+  ProductPreviewImage,
+  ProductRecord,
+  ServiceCategoryRecord,
+  ShopSettingsRecord,
+} from "@/lib/shop-types";
 import {
   buildProductImageProxyUrl,
+  getPrimaryPreviewImage,
   getProductImagePresentation,
 } from "@/lib/shop-utils";
-import { formatAmountInputValue, formatAmountWithCurrency } from "@/lib/utils";
+import { cn, formatAmountInputValue, formatAmountWithCurrency } from "@/lib/utils";
 
 type CatalogTab = "categories" | "products";
 
@@ -46,6 +67,8 @@ const emptyProductForm = {
   image_fit: "contain",
   image_position: "center center",
   image_zoom: "1",
+  color_options: [] as ProductColorOption[],
+  preview_images: [] as ProductPreviewImage[],
   is_active: true,
   sort_order: "0",
 };
@@ -73,6 +96,9 @@ export function ShopCatalogManager() {
   const [saving, setSaving] = useState(false);
   const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
   const [uploadingProductImage, setUploadingProductImage] = useState(false);
+  const [uploadingPreviewImages, setUploadingPreviewImages] = useState(false);
+  const [activeColorOptionId, setActiveColorOptionId] = useState<string | null>(null);
+  const [hoveredColorOptionId, setHoveredColorOptionId] = useState<string | null>(null);
   const [categories, setCategories] = useState<ServiceCategoryRecord[]>([]);
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [, setSettings] = useState<ShopSettingsRecord | null>(null);
@@ -105,6 +131,27 @@ export function ShopCatalogManager() {
       transformOrigin: presentation.transformOrigin,
     };
   }, [productForm.image_fit, productForm.image_position, productForm.image_zoom]);
+
+  const primaryPreviewImage = useMemo(
+    () =>
+      getPrimaryPreviewImage({
+        image_url: productForm.image_url,
+        thumbnail_url: productForm.thumbnail_url,
+        preview_images: productForm.preview_images,
+      }),
+    [productForm.image_url, productForm.preview_images, productForm.thumbnail_url],
+  );
+
+  const getAdminColorSwatchClassName = (colorId: string) => {
+    return cn(
+      "ajn-admin-color-swatch",
+      activeColorOptionId === colorId && "is-selected",
+      hoveredColorOptionId === colorId && "is-hovered",
+    );
+  };
+
+  const isProductColorSelected = (colorId: string) =>
+    productForm.color_options.some((item) => item.id === colorId);
 
   const loadData = async () => {
     try {
@@ -217,6 +264,146 @@ export function ShopCatalogManager() {
     }
   };
 
+  const uploadPreviewImages = async (files: FileList | File[]) => {
+    const fileList = Array.from(files);
+
+    if (!fileList.length) {
+      return;
+    }
+
+    const formData = new FormData();
+    fileList.forEach((file) => formData.append("files", file));
+    const loadingToast = toast.loading("جاري تحسين الصورة...");
+    setUploadingPreviewImages(true);
+
+    try {
+      const response = await fetch("/api/admin/media?kind=product-image", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as {
+        message?: string;
+        files?: { url: string; thumbnailUrl?: string }[];
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر رفع صور المعاينة.");
+      }
+
+      const uploadedImages = (payload.files ?? [])
+        .filter((item) => item.url)
+        .map((item, index) => ({
+          id: crypto.randomUUID(),
+          url: item.url,
+          thumbnail_url: item.thumbnailUrl || item.url,
+          sort_order: productForm.preview_images.length + index,
+          is_primary: productForm.preview_images.length === 0 && index === 0,
+        }));
+
+      setProductForm((current) => ({
+        ...current,
+        preview_images: [...current.preview_images, ...uploadedImages].map((item, index, array) => ({
+          ...item,
+          sort_order: index,
+          is_primary: array.some((entry) => entry.is_primary) ? item.is_primary : index === 0,
+        })),
+      }));
+
+      toast.success("تم رفع الصورة وتحسينها.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر رفع صور المعاينة.");
+    } finally {
+      toast.dismiss(loadingToast);
+      setUploadingPreviewImages(false);
+    }
+  };
+
+  const toggleProductColor = (colorId: string) => {
+    const paletteColor = SHOP_PRODUCT_COLOR_LIBRARY.find((item) => item.id === colorId);
+
+    if (!paletteColor) {
+      return;
+    }
+
+    setProductForm((current) => {
+      const isSelected = current.color_options.some((item) => item.id === colorId);
+
+      if (isSelected) {
+        return {
+          ...current,
+          color_options: current.color_options.filter((item) => item.id !== colorId),
+        };
+      }
+
+      const next = [...current.color_options, { ...paletteColor }];
+      next.sort((a, b) => a.sort_order - b.sort_order);
+
+      return {
+        ...current,
+        color_options: next,
+      };
+    });
+
+    setActiveColorOptionId(colorId);
+  };
+
+  const setPrimaryPreviewImage = (id: string) => {
+    setProductForm((current) => ({
+      ...current,
+      preview_images: current.preview_images.map((item) => ({
+        ...item,
+        is_primary: item.id === id,
+      })),
+    }));
+  };
+
+  const movePreviewImage = (id: string, direction: "up" | "down") => {
+    setProductForm((current) => {
+      const next = [...current.preview_images];
+      const index = next.findIndex((item) => item.id === id);
+
+      if (index < 0) {
+        return current;
+      }
+
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+      if (targetIndex < 0 || targetIndex >= next.length) {
+        return current;
+      }
+
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+
+      return {
+        ...current,
+        preview_images: next.map((item, orderIndex) => ({ ...item, sort_order: orderIndex })),
+      };
+    });
+  };
+
+  const removePreviewImage = async (imageId: string) => {
+    const previewImage = productForm.preview_images.find((item) => item.id === imageId);
+
+    if (!previewImage || !window.confirm("هل تريد حذف هذه الصورة؟")) {
+      return;
+    }
+
+    setProductForm((current) => {
+      const remaining = current.preview_images.filter((item) => item.id !== imageId);
+      const hasPrimary = remaining.some((item) => item.is_primary);
+
+      return {
+        ...current,
+        preview_images: remaining.map((item, index) => ({
+          ...item,
+          sort_order: index,
+          is_primary: hasPrimary ? item.is_primary : index === 0,
+        })),
+      };
+    });
+    toast.success("تم حذف الصورة. احفظ التعديل.");
+  };
+
   const saveCategory = async () => {
     try {
       setSaving(true);
@@ -267,6 +454,8 @@ export function ShopCatalogManager() {
 
       toast.success(productForm.id ? "تم تحديث المنتج." : "تم حفظ المنتج.");
       setProductForm(emptyProductForm);
+      setActiveColorOptionId(null);
+      setHoveredColorOptionId(null);
       await loadData();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر حفظ المنتج.");
@@ -794,6 +983,188 @@ export function ShopCatalogManager() {
               />
 
               <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Palette className="h-5 w-5 text-ajn-gold" />
+                    <h3 className="text-lg font-bold text-white">الألوان المتوفرة</h3>
+                  </div>
+                  <span className="text-xs font-semibold text-ajn-goldSoft">
+                    {productForm.color_options.length} / {SHOP_PRODUCT_COLOR_LIBRARY.length}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-[22px] border border-ajn-line bg-black/30 px-4 py-5">
+                    <div className="ajn-admin-color-deck">
+                      {SHOP_PRODUCT_COLOR_LIBRARY.map((color) => {
+                        const isSelected = isProductColorSelected(color.id);
+
+                        return (
+                          <button
+                            key={color.id}
+                            type="button"
+                            className={cn(
+                              getAdminColorSwatchClassName(color.id),
+                              isSelected && "is-selected",
+                            )}
+                            style={
+                              {
+                                ["--swatch-color" as "--swatch-color"]: color.color_hex,
+                              } as CSSProperties
+                            }
+                            data-color-label={color.color_name}
+                            aria-label={color.color_name}
+                            onMouseEnter={() => setHoveredColorOptionId(color.id)}
+                            onMouseLeave={() => setHoveredColorOptionId(null)}
+                            onFocus={() => {
+                              setActiveColorOptionId(color.id);
+                              setHoveredColorOptionId(color.id);
+                            }}
+                            onBlur={() => setHoveredColorOptionId(null)}
+                            onClick={() => toggleProductColor(color.id)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {productForm.color_options.length ? (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {productForm.color_options.map((color) => (
+                        <div
+                          key={color.id}
+                          className={cn(
+                            "ajn-admin-color-editor-row is-active relative flex items-center justify-between gap-3 rounded-[18px] border border-ajn-line bg-white/[0.03] px-3 py-3",
+                            activeColorOptionId === color.id && "ring-1 ring-ajn-gold/25",
+                          )}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleProductColor(color.id)}
+                            className="absolute left-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-red-400/25 bg-black/70 text-red-200 transition hover:border-red-400/45 hover:bg-red-500/15"
+                            aria-label={`حذف اللون ${color.color_name}`}
+                            title="حذف اللون"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              className="ajn-admin-color-swatch is-selected"
+                              style={
+                                {
+                                  ["--swatch-color" as "--swatch-color"]: color.color_hex,
+                                } as CSSProperties
+                              }
+                              data-color-label={color.color_name}
+                              aria-label={color.color_name}
+                              onMouseEnter={() => setHoveredColorOptionId(color.id)}
+                              onMouseLeave={() => setHoveredColorOptionId(null)}
+                              onClick={() => setActiveColorOptionId(color.id)}
+                            />
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-white">{color.color_name}</p>
+                              <p className="text-xs text-ajn-muted">{color.color_hex}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-ajn-muted">اختياري. اختر من الألوان الجاهزة فقط.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ImagePlus className="h-5 w-5 text-ajn-gold" />
+                    <h3 className="text-lg font-bold text-white">صور معاينة المنتج</h3>
+                  </div>
+                  <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-ajn-line bg-white/[0.04] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]">
+                    <Plus className="ml-2 h-4 w-4 text-ajn-gold" />
+                    {uploadingPreviewImages ? "جاري تحسين الصورة..." : "رفع صور"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(event) => {
+                        if (event.target.files?.length) {
+                          void uploadPreviewImages(event.target.files);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {productForm.preview_images.length ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {productForm.preview_images
+                      .slice()
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                      .map((image, index) => (
+                        <div key={image.id} className="rounded-[24px] border border-ajn-line bg-white/[0.03] p-3">
+                          <div className="relative">
+                            <PreviewImage
+                              src={buildProductImageProxyUrl(image.thumbnail_url || image.url)}
+                              previewSrc={buildProductImageProxyUrl(image.url)}
+                              alt={`${productForm.name || "صورة معاينة"} ${index + 1}`}
+                              containerClassName="h-40 rounded-[20px] bg-black/20 p-3"
+                              imageClassName="object-contain"
+                            />
+                            {image.is_primary ? (
+                              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-ajn-gold/20 bg-black/75 px-2 py-1 text-[11px] font-semibold text-ajn-gold">
+                                <Star className="h-3 w-3 fill-current" />
+                                أساسية
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="mt-3 flex flex-wrap justify-end gap-2">
+                            <Button
+                              variant="secondary"
+                              className="h-9 px-3 text-xs"
+                              onClick={() => setPrimaryPreviewImage(image.id)}
+                            >
+                              <Star className="h-3.5 w-3.5" />
+                              أساسية
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              className="h-9 px-3 text-xs"
+                              onClick={() => movePreviewImage(image.id, "up")}
+                              disabled={index === 0}
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              className="h-9 px-3 text-xs"
+                              onClick={() => movePreviewImage(image.id, "down")}
+                              disabled={index === productForm.preview_images.length - 1}
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              className="h-9 px-3 text-xs"
+                              onClick={() => void removePreviewImage(image.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              حذف
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-ajn-muted">إذا لم تضف صورًا فلن يظهر زر معاينة المنتج للزبون.</p>
+                )}
+              </div>
+
+              <div className="surface-panel-strong space-y-4 rounded-[28px] p-4 sm:p-5">
                 <div className="flex flex-col gap-1">
                   <h3 className="text-lg font-bold text-white">إعدادات عرض الصورة</h3>
                   <p className="text-sm text-ajn-muted">تظهر للأدمن فقط.</p>
@@ -846,7 +1217,8 @@ export function ShopCatalogManager() {
                 <div className="space-y-3">
                   <p className="text-sm font-semibold text-white">المعاينة</p>
                   <PreviewImage
-                    src={buildProductImageProxyUrl(productForm.image_url)}
+                    src={buildProductImageProxyUrl(primaryPreviewImage?.thumbnail_url || productForm.image_url)}
+                    previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || productForm.image_url)}
                     alt={productForm.name || "معاينة المنتج"}
                     containerClassName="h-56 rounded-[26px] border border-ajn-line bg-white/[0.03] p-4"
                     imageStyle={productPreviewStyle}
@@ -899,7 +1271,11 @@ export function ShopCatalogManager() {
                   {(productForm.image_url || productForm.id) ? (
                     <Button
                       variant="secondary"
-                      onClick={() => setProductForm(emptyProductForm)}
+                      onClick={() => {
+                        setProductForm(emptyProductForm);
+                        setActiveColorOptionId(null);
+                        setHoveredColorOptionId(null);
+                      }}
                     >
                       جديد
                     </Button>
@@ -911,10 +1287,11 @@ export function ShopCatalogManager() {
                 </div>
               </div>
 
-              {productForm.image_url ? (
+              {primaryPreviewImage?.url || productForm.image_url ? (
                 <div className="relative">
                   <PreviewImage
-                    src={buildProductImageProxyUrl(productForm.image_url)}
+                    src={buildProductImageProxyUrl(primaryPreviewImage?.thumbnail_url || productForm.image_url)}
+                    previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || productForm.image_url)}
                     alt="product"
                     containerClassName="h-44 rounded-3xl border border-ajn-line bg-white/[0.03] p-4"
                     imageStyle={productPreviewStyle}
@@ -943,14 +1320,17 @@ export function ShopCatalogManager() {
                 ) : (() => {
                   const productItem = item as ProductRecord;
                   const itemImagePresentation = getProductImagePresentation(productItem);
+                  const itemPrimaryPreviewImage = getPrimaryPreviewImage(productItem);
 
                   return (
                   <div key={productItem.id} className="surface-panel p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                       <div className="relative">
                         <PreviewImage
-                          src={buildProductImageProxyUrl(productItem.thumbnail_url || productItem.image_url)}
-                          previewSrc={buildProductImageProxyUrl(productItem.image_url)}
+                          src={buildProductImageProxyUrl(
+                            itemPrimaryPreviewImage?.thumbnail_url || productItem.thumbnail_url || productItem.image_url,
+                          )}
+                          previewSrc={buildProductImageProxyUrl(itemPrimaryPreviewImage?.url || productItem.image_url)}
                           alt={productItem.name}
                           containerClassName="h-20 w-full rounded-2xl bg-white/[0.04] p-2 sm:w-24"
                           imageStyle={{
@@ -989,6 +1369,30 @@ export function ShopCatalogManager() {
                             {productItem.description}
                           </p>
                         ) : null}
+                        {productItem.color_options.length ? (
+                          <div className="ajn-admin-color-deck mt-3">
+                            {productItem.color_options.slice(0, 5).map((color) => (
+                              <button
+                                key={color.id}
+                                type="button"
+                                className="ajn-admin-color-swatch"
+                                style={
+                                  {
+                                    ["--swatch-color" as "--swatch-color"]: color.color_hex || "#D4AF37",
+                                  } as CSSProperties
+                                }
+                                data-color-label={color.color_name || color.color_hex || "#D4AF37"}
+                                aria-label={color.color_name || color.color_hex || "#D4AF37"}
+                                tabIndex={-1}
+                              />
+                            ))}
+                          </div>
+                        ) : null}
+                        {productItem.preview_images.length ? (
+                          <p className="mt-2 text-xs font-semibold text-ajn-goldSoft">
+                            صور المعاينة: {productItem.preview_images.length}
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-sm text-ajn-gold">
                           {formatAmountWithCurrency(productItem.price)}
                         </p>
@@ -1002,20 +1406,26 @@ export function ShopCatalogManager() {
                           variant="secondary"
                           className="px-3 py-2 text-xs"
                           onClick={() =>
-                            setProductForm({
-                              id: productItem.id,
-                              category_id: productItem.category_id,
-                              name: productItem.name,
-                              description: productItem.description,
-                              price: formatAmountInputValue(productItem.price),
-                              image_url: productItem.image_url,
-                              thumbnail_url: productItem.thumbnail_url,
-                              image_fit: productItem.image_fit,
-                              image_position: productItem.image_position,
-                              image_zoom: String(productItem.image_zoom),
-                              is_active: productItem.is_active,
-                              sort_order: String(productItem.sort_order),
-                            })
+                            (() => {
+                              setProductForm({
+                                id: productItem.id,
+                                category_id: productItem.category_id,
+                                name: productItem.name,
+                                description: productItem.description,
+                                price: formatAmountInputValue(productItem.price),
+                                image_url: productItem.image_url,
+                                thumbnail_url: productItem.thumbnail_url,
+                                image_fit: productItem.image_fit,
+                                image_position: productItem.image_position,
+                                image_zoom: String(productItem.image_zoom),
+                                color_options: productItem.color_options,
+                                preview_images: productItem.preview_images,
+                                is_active: productItem.is_active,
+                                sort_order: String(productItem.sort_order),
+                              });
+                              setActiveColorOptionId(productItem.color_options[0]?.id ?? null);
+                              setHoveredColorOptionId(null);
+                            })()
                           }
                         >
                           <Pencil className="h-4 w-4" />

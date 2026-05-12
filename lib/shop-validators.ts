@@ -4,10 +4,17 @@ import {
   SHOP_DEFAULT_SETTINGS,
   SHOP_ORDER_STATUSES,
   SHOP_PAYMENT_METHODS,
+  SHOP_PRODUCT_COLOR_LIBRARY,
   SHOP_PRODUCT_IMAGE_FITS,
   SHOP_PRODUCT_IMAGE_POSITIONS,
 } from "@/lib/shop-constants";
-import { buildGoogleMapsUrl, normalizeGoogleMapsUrl, slugifyStoreText } from "@/lib/shop-utils";
+import {
+  buildGoogleMapsUrl,
+  getShopProductColorByHex,
+  getShopProductColorByName,
+  normalizeGoogleMapsUrl,
+  slugifyStoreText,
+} from "@/lib/shop-utils";
 import { normalizeArabicDigits, normalizePhone, parseAmountValue } from "@/lib/utils";
 
 const textField = z
@@ -86,6 +93,34 @@ const imageZoomField = z
     return Math.min(2.5, Math.max(0.5, parsed));
   });
 
+const colorHexField = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : ""))
+  .transform((value) => {
+    if (!value) {
+      return "";
+    }
+
+    const normalized = value.startsWith("#") ? value : `#${value}`;
+    const upper = normalized.toUpperCase();
+    return /^#[0-9A-F]{6}$/.test(upper) || /^#[0-9A-F]{3}$/.test(upper) ? upper : "";
+  });
+
+const productColorOptionSchema = z.object({
+  id: textField,
+  color_name: textField,
+  color_hex: colorHexField,
+  sort_order: sortOrderField.default(0),
+});
+
+const previewImageSchema = z.object({
+  id: textField,
+  url: textField,
+  thumbnail_url: textField,
+  sort_order: sortOrderField.default(0),
+  is_primary: booleanField.default(false),
+});
+
 export const serviceCategorySchema = z.object({
   name: z.string().min(1, "اسم القسم مطلوب."),
   slug: textField,
@@ -111,11 +146,37 @@ export const productSchema = z.object({
   image_fit: imageFitField.default("contain"),
   image_position: imagePositionField.default("center center"),
   image_zoom: imageZoomField.default(1),
+  color_options: z.array(productColorOptionSchema).optional().default([]),
+  preview_images: z.array(previewImageSchema).optional().default([]),
   is_active: booleanField.default(true),
   sort_order: sortOrderField.default(0),
 }).transform((value) => ({
   ...value,
   thumbnail_url: value.thumbnail_url || value.image_url || "",
+  color_options: value.color_options
+    .map((item) => getShopProductColorByHex(item.color_hex) ?? getShopProductColorByName(item.color_name))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((item, index) => ({
+      id: item.id,
+      color_name: item.color_name,
+      color_hex: item.color_hex,
+      sort_order: index,
+    })),
+  preview_images: value.preview_images
+    .filter((item) => item.url)
+    .map((item, index) => ({
+      ...item,
+      id: item.id || crypto.randomUUID(),
+      thumbnail_url: item.thumbnail_url || item.url,
+      sort_order: index,
+      is_primary: Boolean(item.is_primary),
+    }))
+    .map((item, index, array) => ({
+      ...item,
+      is_primary: array.some((entry) => entry.is_primary) ? item.is_primary : index === 0,
+    })),
 }));
 
 export const shopSettingsSchema = z.object({
@@ -165,6 +226,11 @@ export const checkoutItemSchema = z.object({
       const parsed = Number.parseInt(normalizeArabicDigits(value).replace(/[^\d-]/g, ""), 10);
       return Number.isFinite(parsed) ? Math.max(1, parsed) : 1;
     }),
+  selected_color_name: textField,
+  selected_color_hex: colorHexField.refine(
+    (value) => value === "" || SHOP_PRODUCT_COLOR_LIBRARY.some((item) => item.color_hex === value),
+    "لون المنتج غير صالح.",
+  ),
 });
 
 export const checkoutOrderSchema = z
@@ -229,6 +295,8 @@ export function normalizeShopOptionalTextPayload<T extends Record<string, unknow
     image_fit: body.image_fit ?? "contain",
     image_position: body.image_position ?? "center center",
     image_zoom: body.image_zoom ?? 1,
+    color_options: Array.isArray(body.color_options) ? body.color_options : [],
+    preview_images: Array.isArray(body.preview_images) ? body.preview_images : [],
     description: body.description ?? "",
     mastercard_qr_url: body.mastercard_qr_url ?? "",
     driver_notes: body.driver_notes ?? "",

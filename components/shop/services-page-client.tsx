@@ -1,9 +1,9 @@
 "use client";
 
-import { ArrowLeft, Gift, Heart, Package2, Search, ShoppingCart, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, Gift, Heart, Package2, Search, ShoppingCart, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
 
 import { AnimatedServicePanel } from "@/components/ui/animated-service-panel";
@@ -11,16 +11,24 @@ import { Button } from "@/components/ui/button";
 import { HomeLinkButton } from "@/components/ui/home-link-button";
 import {
   PreviewImage,
+  PreviewGalleryLightbox,
   PreviewLightbox,
+  type PreviewGalleryItem,
   type PreviewLightboxImage,
 } from "@/components/ui/preview-image";
-import type { ProductRecord, ShopCatalogPayload, ShopCategoryNode } from "@/lib/shop-types";
+import type {
+  ProductColorOption,
+  ProductRecord,
+  ShopCatalogPayload,
+  ShopCategoryNode,
+} from "@/lib/shop-types";
 import {
   buildProductImageProxyUrl,
   findCategoryBySlug,
+  getPrimaryPreviewImage,
   getProductImagePresentation,
 } from "@/lib/shop-utils";
-import { formatAmountWithCurrency } from "@/lib/utils";
+import { cn, formatAmountWithCurrency } from "@/lib/utils";
 import { QuantityControl } from "@/components/shop/quantity-control";
 import { useShopCart } from "@/components/shop/cart-provider";
 
@@ -42,6 +50,14 @@ export function ServicesPageClient() {
   const [activePreviewImage, setActivePreviewImage] = useState<(PreviewLightboxImage & { sectionKey: string }) | null>(
     null,
   );
+  const [selectedColors, setSelectedColors] = useState<Record<string, ProductColorOption | null>>({});
+  const [activeGallery, setActiveGallery] = useState<{
+    key: string;
+    sectionKey: string;
+    title: string;
+    images: PreviewGalleryItem[];
+    initialIndex: number;
+  } | null>(null);
   const rootSlug = searchParams.get("main");
   const subSlug = searchParams.get("sub");
   const visibleKey = `${rootSlug ?? ""}:${subSlug ?? ""}`;
@@ -83,6 +99,7 @@ export function ServicesPageClient() {
   const displayedProducts = currentProducts.slice(0, visibleProducts);
   const visiblePreviewImage =
     activePreviewImage && activePreviewImage.sectionKey === visibleKey ? activePreviewImage : null;
+  const visibleGallery = activeGallery && activeGallery.sectionKey === visibleKey ? activeGallery : null;
 
   const setQuantity = (productId: string, value: number) => {
     setQuantities((current) => ({
@@ -92,6 +109,8 @@ export function ServicesPageClient() {
   };
 
   const getQuantity = (productId: string) => quantities[productId] ?? 1;
+  const getSelectedColor = (product: ProductRecord) =>
+    selectedColors[product.id] ?? product.color_options[0] ?? null;
 
   return (
     <div className="page-shell pb-24 pt-6 sm:pt-10">
@@ -251,6 +270,17 @@ export function ServicesPageClient() {
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
                   {displayedProducts.map((product: ProductRecord, index) => {
                     const imagePresentation = getProductImagePresentation(product);
+                    const selectedColor = getSelectedColor(product);
+                    const primaryPreviewImage = getPrimaryPreviewImage(product);
+                    const previewGalleryItems = product.preview_images
+                      .map((image) => ({
+                        id: image.id,
+                        src: buildProductImageProxyUrl(image.url),
+                        thumbnailSrc: buildProductImageProxyUrl(image.thumbnail_url || image.url),
+                        alt: `${product.name} ${selectedColor?.color_name ? `- ${selectedColor.color_name}` : ""}`.trim(),
+                      }))
+                      .filter((image) => image.src);
+                    const hasPreviewGallery = previewGalleryItems.length > 0;
 
                     return (
                       <div
@@ -258,8 +288,10 @@ export function ServicesPageClient() {
                         className="group surface-panel glass-hover overflow-hidden [transform-style:preserve-3d]"
                       >
                         <PreviewImage
-                          src={buildProductImageProxyUrl(product.thumbnail_url || product.image_url)}
-                          previewSrc={buildProductImageProxyUrl(product.image_url)}
+                          src={buildProductImageProxyUrl(
+                            primaryPreviewImage?.thumbnail_url || product.thumbnail_url || product.image_url,
+                          )}
+                          previewSrc={buildProductImageProxyUrl(primaryPreviewImage?.url || product.image_url)}
                           alt={product.name}
                           priority={index < 4}
                           sizes="(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 25vw"
@@ -299,6 +331,64 @@ export function ServicesPageClient() {
                               {formatAmountWithCurrency(product.price)}
                             </p>
                           </div>
+                          {product.color_options.length ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-[12px] font-semibold text-ajn-muted">الألوان المتوفرة</p>
+                                {selectedColor?.color_name ? (
+                                  <span className="text-[12px] font-semibold text-ajn-gold">
+                                    {selectedColor.color_name}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="ajn-shop-color-row">
+                                {product.color_options.map((color) => {
+                                  const isSelected =
+                                    selectedColor?.id === color.id ||
+                                    (selectedColor?.color_hex && selectedColor.color_hex === color.color_hex);
+
+                                  return (
+                                    <button
+                                      key={color.id}
+                                      type="button"
+                                      onClick={() =>
+                                        setSelectedColors((current) => ({
+                                          ...current,
+                                          [product.id]: color,
+                                        }))
+                                      }
+                                      className={cn("ajn-shop-color-button", isSelected && "is-selected")}
+                                      style={
+                                        {
+                                          ["--swatch-color" as "--swatch-color"]: color.color_hex || "#D4AF37",
+                                        } as CSSProperties
+                                      }
+                                      title={color.color_name || color.color_hex}
+                                      aria-label={color.color_name || color.color_hex}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
+                          {hasPreviewGallery ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveGallery({
+                                  key: crypto.randomUUID(),
+                                  sectionKey: visibleKey,
+                                  title: product.name,
+                                  images: previewGalleryItems,
+                                  initialIndex: 0,
+                                })
+                              }
+                              className="inline-flex items-center gap-2 text-sm font-semibold text-ajn-gold transition hover:text-ajn-goldSoft"
+                            >
+                              <Eye className="h-4 w-4" />
+                              معاينة المنتج
+                            </button>
+                          ) : null}
                           <div className="flex flex-col gap-2.5">
                             <QuantityControl
                               className="w-full"
@@ -308,7 +398,7 @@ export function ServicesPageClient() {
                             />
                             <Button
                               className="h-10 w-full rounded-2xl text-sm"
-                              onClick={() => addItem(product, getQuantity(product.id))}
+                              onClick={() => addItem(product, getQuantity(product.id), selectedColor)}
                             >
                               إضافة للسلة
                             </Button>
@@ -345,6 +435,13 @@ export function ServicesPageClient() {
         <PreviewLightbox
           image={visiblePreviewImage}
           onClose={() => setActivePreviewImage(null)}
+        />
+        <PreviewGalleryLightbox
+          key={visibleGallery?.key ?? "shop-gallery"}
+          open={Boolean(visibleGallery)}
+          images={visibleGallery?.images ?? []}
+          initialIndex={visibleGallery?.initialIndex ?? 0}
+          onClose={() => setActiveGallery(null)}
         />
       </div>
     </div>

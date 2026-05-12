@@ -1,8 +1,8 @@
 "use client";
 
-import { Expand, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
@@ -12,6 +12,13 @@ export interface PreviewLightboxImage {
   alt: string;
   imageStyle?: CSSProperties;
   imageClassName?: string;
+}
+
+export interface PreviewGalleryItem {
+  id: string;
+  src: string;
+  thumbnailSrc?: string;
+  alt: string;
 }
 
 interface PreviewImageProps {
@@ -36,9 +43,16 @@ interface PreviewLightboxProps {
   onClose: () => void;
 }
 
-export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
+interface PreviewGalleryLightboxProps {
+  images: PreviewGalleryItem[];
+  initialIndex?: number;
+  open: boolean;
+  onClose: () => void;
+}
+
+function useLockBodyScroll(active: boolean) {
   useEffect(() => {
-    if (!image) {
+    if (!active) {
       return;
     }
 
@@ -46,6 +60,21 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
     const previousHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [active]);
+}
+
+export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
+  useLockBodyScroll(Boolean(image));
+
+  useEffect(() => {
+    if (!image) {
+      return;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -56,8 +85,6 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [image, onClose]);
@@ -98,6 +125,178 @@ export function PreviewLightbox({ image, onClose }: PreviewLightboxProps) {
             className={cn("object-contain", image.imageClassName)}
           />
         </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function PreviewGalleryLightbox({
+  images,
+  initialIndex = 0,
+  open,
+  onClose,
+}: PreviewGalleryLightboxProps) {
+  const [currentIndex, setCurrentIndex] = useState(() => initialIndex);
+  const touchStartX = useRef<number | null>(null);
+  const visibleImages = images.filter((item) => item.src);
+  const activeImage = visibleImages[currentIndex] ?? null;
+
+  useLockBodyScroll(open && visibleImages.length > 0);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+
+      if (event.key === "ArrowLeft") {
+        setCurrentIndex((current) => (current + 1) % visibleImages.length);
+      }
+
+      if (event.key === "ArrowRight") {
+        setCurrentIndex((current) => (current - 1 + visibleImages.length) % visibleImages.length);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose, open, visibleImages.length]);
+
+  if (!open || !activeImage || typeof document === "undefined") {
+    return null;
+  }
+
+  const nextImage = () => {
+    setCurrentIndex((current) => (current + 1) % visibleImages.length);
+  };
+
+  const previousImage = () => {
+    setCurrentIndex((current) => (current - 1 + visibleImages.length) % visibleImages.length);
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-md sm:px-6 sm:py-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute left-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white transition hover:bg-white/15"
+        aria-label="إغلاق"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <div
+        className="relative w-full max-w-6xl overflow-hidden rounded-[30px] border border-ajn-line bg-[#070707]/95 p-4 shadow-gold sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <p className="truncate text-sm font-semibold text-ajn-goldSoft sm:text-base">{activeImage.alt}</p>
+          <div className="flex items-center gap-2 text-xs text-ajn-muted">
+            <span>{currentIndex + 1}</span>
+            <span>/</span>
+            <span>{visibleImages.length}</span>
+          </div>
+        </div>
+
+        <div className="relative flex items-center justify-center">
+          {visibleImages.length > 1 ? (
+            <button
+              type="button"
+              onClick={previousImage}
+              className="absolute right-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white transition hover:border-ajn-gold/35 hover:text-ajn-gold sm:right-4"
+              aria-label="السابق"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          ) : null}
+
+          <div
+            className="relative h-[62vh] max-h-[78vh] w-full overflow-hidden rounded-[24px] bg-black/35"
+            onTouchStart={(event) => {
+              touchStartX.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (touchStartX.current === null) {
+                return;
+              }
+
+              const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+              const delta = endX - touchStartX.current;
+              touchStartX.current = null;
+
+              if (Math.abs(delta) < 40 || visibleImages.length < 2) {
+                return;
+              }
+
+              if (delta < 0) {
+                nextImage();
+                return;
+              }
+
+              previousImage();
+            }}
+          >
+            <Image
+              src={activeImage.src}
+              alt={activeImage.alt}
+              fill
+              priority
+              unoptimized={activeImage.src.startsWith("/api/media?")}
+              sizes="100vw"
+              className="object-contain"
+            />
+          </div>
+
+          {visibleImages.length > 1 ? (
+            <button
+              type="button"
+              onClick={nextImage}
+              className="absolute left-2 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white transition hover:border-ajn-gold/35 hover:text-ajn-gold sm:left-4"
+              aria-label="التالي"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          ) : null}
+        </div>
+
+        {visibleImages.length > 1 ? (
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            {visibleImages.map((image, index) => (
+              <button
+                key={image.id}
+                type="button"
+                onClick={() => setCurrentIndex(index)}
+                className={cn(
+                  "relative h-16 w-16 overflow-hidden rounded-2xl border bg-white/[0.03] transition",
+                  index === currentIndex
+                    ? "border-ajn-gold shadow-[0_0_18px_rgba(212,175,55,0.18)]"
+                    : "border-white/10 hover:border-ajn-gold/30",
+                )}
+                aria-label={`عرض الصورة ${index + 1}`}
+              >
+                <Image
+                  src={image.thumbnailSrc || image.src}
+                  alt={image.alt}
+                  fill
+                  unoptimized={(image.thumbnailSrc || image.src).startsWith("/api/media?")}
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,

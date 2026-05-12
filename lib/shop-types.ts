@@ -11,6 +11,21 @@ export type ShopPrintStatus = "pending" | "printed" | "failed";
 export type ProductImageFit = (typeof SHOP_PRODUCT_IMAGE_FITS)[number];
 export type ProductImagePosition = (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number];
 
+export interface ProductColorOption {
+  id: string;
+  color_name: string;
+  color_hex: string;
+  sort_order: number;
+}
+
+export interface ProductPreviewImage {
+  id: string;
+  url: string;
+  thumbnail_url: string;
+  sort_order: number;
+  is_primary: boolean;
+}
+
 export interface ServiceCategoryRecord {
   id: string;
   name: string;
@@ -35,6 +50,8 @@ export interface ProductRecord {
   image_fit: ProductImageFit;
   image_position: ProductImagePosition;
   image_zoom: number;
+  color_options: ProductColorOption[];
+  preview_images: ProductPreviewImage[];
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -61,6 +78,8 @@ export interface ShopOrderItemRecord {
   product_id: string | null;
   product_name: string;
   product_image: string;
+  selected_color_name: string;
+  selected_color_hex: string;
   quantity: number;
   price: number;
   total: number;
@@ -95,6 +114,7 @@ export interface ShopOrderRecord {
 }
 
 export interface ShopCartItem {
+  cart_key: string;
   product_id: string;
   name: string;
   image_url: string;
@@ -102,6 +122,8 @@ export interface ShopCartItem {
   image_fit: ProductImageFit;
   image_position: ProductImagePosition;
   image_zoom: number;
+  selected_color_name: string;
+  selected_color_hex: string;
   price: number;
   quantity: number;
 }

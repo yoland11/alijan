@@ -1,4 +1,8 @@
-import { SHOP_DEFAULT_SETTINGS, SHOP_PAYMENT_METHOD_LABELS } from "@/lib/shop-constants";
+import {
+  SHOP_DEFAULT_SETTINGS,
+  SHOP_PAYMENT_METHOD_LABELS,
+  SHOP_PRODUCT_COLOR_LIBRARY,
+} from "@/lib/shop-constants";
 import {
   SHOP_PRODUCT_IMAGE_FITS,
   SHOP_PRODUCT_IMAGE_POSITIONS,
@@ -6,6 +10,8 @@ import {
 import type {
   ProductImageFit,
   ProductImagePosition,
+  ProductColorOption,
+  ProductPreviewImage,
   ProductRecord,
   ServiceCategoryRecord,
   ShopCategoryNode,
@@ -56,6 +62,61 @@ function normalizeInteger(value: unknown) {
   return 0;
 }
 
+function normalizeHexColor(value: unknown) {
+  const normalized = normalizeShopText(value).replace(/[^#a-fA-F0-9]/g, "");
+
+  if (!normalized) {
+    return "";
+  }
+
+  const withHash = normalized.startsWith("#") ? normalized : `#${normalized}`;
+  const candidate = withHash.toUpperCase();
+
+  if (/^#[0-9A-F]{6}$/.test(candidate) || /^#[0-9A-F]{3}$/.test(candidate)) {
+    return candidate;
+  }
+
+  return "";
+}
+
+export function getShopProductColorByHex(value: unknown): ProductColorOption | null {
+  const normalized = normalizeHexColor(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const match = SHOP_PRODUCT_COLOR_LIBRARY.find((item) => item.color_hex === normalized);
+
+  return match
+    ? {
+        id: match.id,
+        color_name: match.color_name,
+        color_hex: match.color_hex,
+        sort_order: match.sort_order,
+      }
+    : null;
+}
+
+export function getShopProductColorByName(value: unknown): ProductColorOption | null {
+  const normalized = normalizeShopText(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const match = SHOP_PRODUCT_COLOR_LIBRARY.find((item) => item.color_name === normalized);
+
+  return match
+    ? {
+        id: match.id,
+        color_name: match.color_name,
+        color_hex: match.color_hex,
+        sort_order: match.sort_order,
+      }
+    : null;
+}
+
 export function slugifyStoreText(value: string) {
   const normalized = normalizeArabicDigits(value)
     .trim()
@@ -95,6 +156,8 @@ export function normalizeProductRecord(raw: Record<string, unknown>): ProductRec
     image_fit: normalizeProductImageFit(raw.image_fit),
     image_position: normalizeProductImagePosition(raw.image_position),
     image_zoom: normalizeProductImageZoom(raw.image_zoom),
+    color_options: normalizeProductColorOptions(raw.color_options),
+    preview_images: normalizeProductPreviewImages(raw.preview_images),
     is_active: normalizeBoolean(raw.is_active),
     sort_order: normalizeInteger(raw.sort_order),
     created_at: normalizeShopText(raw.created_at),
@@ -121,11 +184,65 @@ export function normalizeShopOrderItemRecord(raw: Record<string, unknown>): Shop
     product_id: normalizeShopText(raw.product_id) || null,
     product_name: normalizeShopText(raw.product_name),
     product_image: normalizeShopText(raw.product_image),
+    selected_color_name: normalizeShopText(raw.selected_color_name),
+    selected_color_hex: normalizeHexColor(raw.selected_color_hex),
     quantity: Math.max(1, normalizeInteger(raw.quantity)),
     price: parseAmountValue(raw.price as string | number | null | undefined),
     total: parseAmountValue(raw.total as string | number | null | undefined),
     created_at: normalizeShopText(raw.created_at),
   };
+}
+
+export function normalizeProductColorOptions(value: unknown): ProductColorOption[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      const raw = (item ?? {}) as Record<string, unknown>;
+      return getShopProductColorByHex(raw.color_hex) ?? getShopProductColorByName(raw.color_name);
+    })
+    .filter((item): item is ProductColorOption => Boolean(item))
+    .filter((item, index, array) => array.findIndex((entry) => entry.id === item.id) === index)
+    .sort((a, b) => a.sort_order - b.sort_order || a.color_name.localeCompare(b.color_name, "ar"));
+}
+
+export function normalizeProductPreviewImages(value: unknown): ProductPreviewImage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const normalized = value
+    .map((item, index) => {
+      const raw = (item ?? {}) as Record<string, unknown>;
+      const url = normalizeShopText(raw.url);
+
+      if (!url) {
+        return null;
+      }
+
+      return {
+        id: normalizeShopText(raw.id) || crypto.randomUUID(),
+        url,
+        thumbnail_url: normalizeShopText(raw.thumbnail_url) || url,
+        sort_order: normalizeInteger(raw.sort_order ?? index),
+        is_primary: normalizeBoolean(raw.is_primary),
+      };
+    })
+    .filter((item): item is ProductPreviewImage => Boolean(item))
+    .sort((a, b) => a.sort_order - b.sort_order);
+
+  if (!normalized.length) {
+    return [];
+  }
+
+  const hasPrimary = normalized.some((item) => item.is_primary);
+
+  return normalized.map((item, index) => ({
+    ...item,
+    is_primary: hasPrimary ? item.is_primary : index === 0,
+  }));
 }
 
 export function normalizeShopOrderRecord(
@@ -265,6 +382,33 @@ export function buildProductImageProxyUrl(imageUrl: string) {
   return `/api/media?src=${encodeURIComponent(imageUrl)}`;
 }
 
+export function getPrimaryPreviewImage(product: {
+  image_url?: string;
+  thumbnail_url?: string;
+  preview_images?: ProductPreviewImage[];
+}) {
+  const previewImages = normalizeProductPreviewImages(product.preview_images);
+  const primary = previewImages.find((item) => item.is_primary) ?? previewImages[0] ?? null;
+
+  if (primary) {
+    return primary;
+  }
+
+  const fallbackUrl = normalizeShopText(product.image_url);
+
+  if (!fallbackUrl) {
+    return null;
+  }
+
+  return {
+    id: "primary",
+    url: fallbackUrl,
+    thumbnail_url: normalizeShopText(product.thumbnail_url) || fallbackUrl,
+    sort_order: 0,
+    is_primary: true,
+  } satisfies ProductPreviewImage;
+}
+
 export function normalizeProductImageFit(value: unknown): ProductImageFit {
   const normalized = normalizeShopText(value);
 
@@ -336,6 +480,11 @@ export function buildShopOrderTrackingLink(orderCode: string) {
 export function buildShopInvoiceLink(orderCode: string, autoPrint = false) {
   const suffix = autoPrint ? "?print=1" : "";
   return `${getPublicSiteUrl()}/shop-invoice/${encodeURIComponent(orderCode)}${suffix}`;
+}
+
+export function buildShopCartItemKey(productId: string, selectedColorHex = "", selectedColorName = "") {
+  const suffix = selectedColorHex || selectedColorName || "default";
+  return `${productId}::${suffix}`;
 }
 
 export function buildShopOrderWhatsAppUrl(order: ShopOrderRecord) {

@@ -69,6 +69,18 @@ export function CartPageClient() {
 
                     <div className="flex-1 space-y-2">
                       <h2 className="text-xl font-bold text-white">{item.name}</h2>
+                      {item.selected_color_name || item.selected_color_hex ? (
+                        <div className="flex items-center gap-2 text-sm text-ajn-muted">
+                          <span>اللون:</span>
+                          {item.selected_color_hex ? (
+                            <span
+                              className="inline-flex h-4 w-4 rounded-full border border-white/15"
+                              style={{ backgroundColor: item.selected_color_hex }}
+                            />
+                          ) : null}
+                          <span>{item.selected_color_name || item.selected_color_hex}</span>
+                        </div>
+                      ) : null}
                       <p className="text-sm text-ajn-gold">{formatAmountWithCurrency(item.price)}</p>
                       <p className="text-sm text-white">
                         المجموع: {formatAmountWithCurrency(item.price * item.quantity)}
@@ -79,12 +91,12 @@ export function CartPageClient() {
                       <QuantityControl
                         className="w-full sm:w-auto"
                         value={item.quantity}
-                        onChange={(value) => updateQuantity(item.product_id, value)}
+                        onChange={(value) => updateQuantity(item.cart_key, value)}
                       />
                       <Button
                         variant="danger"
                         className="w-full sm:w-auto"
-                        onClick={() => removeItem(item.product_id)}
+                        onClick={() => removeItem(item.cart_key)}
                       >
                         <Trash2 className="h-4 w-4" />
                         حذف

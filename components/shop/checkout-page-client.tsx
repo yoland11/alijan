@@ -138,6 +138,8 @@ export function CheckoutPageClient() {
           items: items.map((item) => ({
             product_id: item.product_id,
             quantity: item.quantity,
+            selected_color_name: item.selected_color_name,
+            selected_color_hex: item.selected_color_hex,
           })),
         }),
       });
@@ -302,7 +304,7 @@ export function CheckoutPageClient() {
             <CheckoutCard icon={<ShoppingBag className="h-5 w-5" />} title="ملخص الطلب">
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex items-center gap-3 rounded-2xl border border-white/6 bg-black/20 p-3">
+                  <div key={item.cart_key} className="flex items-center gap-3 rounded-2xl border border-white/6 bg-black/20 p-3">
                     {(() => {
                       const imagePresentation = getProductImagePresentation(item);
 
@@ -333,6 +335,18 @@ export function CheckoutPageClient() {
                     })()}
                     <div className="flex-1">
                       <p className="font-semibold text-white">{item.name}</p>
+                      {item.selected_color_name || item.selected_color_hex ? (
+                        <div className="mt-1 flex items-center gap-2 text-xs text-ajn-muted">
+                          <span>اللون:</span>
+                          {item.selected_color_hex ? (
+                            <span
+                              className="inline-flex h-3.5 w-3.5 rounded-full border border-white/15"
+                              style={{ backgroundColor: item.selected_color_hex }}
+                            />
+                          ) : null}
+                          <span>{item.selected_color_name || item.selected_color_hex}</span>
+                        </div>
+                      ) : null}
                       <p className="text-sm text-ajn-muted">x{item.quantity}</p>
                     </div>
                     <p className="text-sm font-semibold text-ajn-gold">

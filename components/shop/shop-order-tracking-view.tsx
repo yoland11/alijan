@@ -52,6 +52,18 @@ export function ShopOrderTrackingView({ order }: { order: ShopOrderRecord }) {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-white">{item.product_name}</p>
+                      {item.selected_color_name || item.selected_color_hex ? (
+                        <div className="mt-1 flex items-center gap-2 text-xs text-ajn-muted">
+                          <span>اللون:</span>
+                          {item.selected_color_hex ? (
+                            <span
+                              className="inline-flex h-3.5 w-3.5 rounded-full border border-white/15"
+                              style={{ backgroundColor: item.selected_color_hex }}
+                            />
+                          ) : null}
+                          <span>{item.selected_color_name || item.selected_color_hex}</span>
+                        </div>
+                      ) : null}
                       <p className="text-sm text-ajn-muted">x{item.quantity}</p>
                     </div>
                     <p className="text-sm font-semibold text-ajn-gold">{formatAmountWithCurrency(item.total)}</p>

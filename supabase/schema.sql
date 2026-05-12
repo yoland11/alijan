@@ -102,17 +102,41 @@ create table if not exists public.products (
   image_fit text not null default 'contain'::text,
   image_position text not null default 'center center'::text,
   image_zoom numeric(6,2) not null default 1,
+  color_options jsonb not null default '[]'::jsonb,
+  preview_images jsonb not null default '[]'::jsonb,
   is_active boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.product_colors (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products(id) on delete cascade,
+  color_name text not null default ''::text,
+  color_hex text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.product_gallery_images (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products(id) on delete cascade,
+  image_url text not null,
+  thumbnail_url text not null default ''::text,
+  alt_text text not null default ''::text,
+  sort_order integer not null default 0,
+  is_primary boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
 alter table public.products
   add column if not exists thumbnail_url text not null default '',
   add column if not exists image_fit text not null default 'contain',
   add column if not exists image_position text not null default 'center center',
-  add column if not exists image_zoom numeric(6,2) not null default 1;
+  add column if not exists image_zoom numeric(6,2) not null default 1,
+  add column if not exists color_options jsonb not null default '[]'::jsonb,
+  add column if not exists preview_images jsonb not null default '[]'::jsonb;
 
 alter table public.service_categories
   add column if not exists thumbnail_url text not null default '';
@@ -163,11 +187,17 @@ create table if not exists public.shop_order_items (
   product_id uuid references public.products(id) on delete set null,
   product_name text not null,
   product_image text not null default ''::text,
+  selected_color_name text not null default ''::text,
+  selected_color_hex text not null default ''::text,
   quantity integer not null default 1,
   price numeric(12,2) not null default 0,
   total numeric(12,2) not null default 0,
   created_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.shop_order_items
+  add column if not exists selected_color_name text not null default '',
+  add column if not exists selected_color_hex text not null default '';
 
 create table if not exists public.settings (
   id uuid primary key default gen_random_uuid(),
