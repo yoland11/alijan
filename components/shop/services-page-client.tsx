@@ -114,6 +114,8 @@ export function ServicesPageClient() {
   const [visibleProductCounts, setVisibleProductCounts] = useState<Record<string, number>>({});
   const [customizations, setCustomizations] = useState<Record<string, ProductCustomizationPayload>>({});
   const [uploadingCustomizationImageFor, setUploadingCustomizationImageFor] = useState<string | null>(null);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [customerLoggedIn, setCustomerLoggedIn] = useState(false);
   const [activeVideoProduct, setActiveVideoProduct] = useState<{
     product: ProductRecord;
     sectionKey: string;
@@ -171,6 +173,29 @@ export function ServicesPageClient() {
     };
 
     void load();
+  }, []);
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const response = await fetch("/api/account/favorites", { cache: "no-store" });
+        const payload = (await response.json()) as { favorites?: string[]; authenticated?: boolean };
+
+        if (!response.ok) {
+          setCustomerLoggedIn(false);
+          setFavoriteIds([]);
+          return;
+        }
+
+        setCustomerLoggedIn(Boolean(payload.authenticated));
+        setFavoriteIds(payload.favorites ?? []);
+      } catch {
+        setCustomerLoggedIn(false);
+        setFavoriteIds([]);
+      }
+    };
+
+    void loadFavorites();
   }, []);
 
   const setQuantity = (productId: string, value: number) => {
@@ -263,6 +288,37 @@ export function ServicesPageClient() {
     }
   };
 
+  const toggleFavorite = async (productId: string) => {
+    try {
+      const response = await fetch("/api/account/favorites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ product_id: productId }),
+      });
+      const payload = (await response.json()) as { message?: string; active?: boolean };
+
+      if (response.status === 401) {
+        toast.error(payload.message || "سجل الدخول أولاً.");
+        router.push("/account/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر تحديث المفضلة.");
+      }
+
+      setFavoriteIds((current) =>
+        payload.active ? [...new Set([...current, productId])] : current.filter((item) => item !== productId),
+      );
+      setCustomerLoggedIn(true);
+      toast.success(payload.message || "تم تحديث المفضلة.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تحديث المفضلة.");
+    }
+  };
+
   return (
     <div className="page-shell pb-24 pt-6 sm:pt-10">
       <div className="section-shell space-y-7">
@@ -274,6 +330,13 @@ export function ServicesPageClient() {
               <h1 className="text-3xl font-bold text-white sm:text-4xl">خدماتنا</h1>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/account"
+                className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.05] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+              >
+                <Heart className="h-4 w-4 text-ajn-gold" />
+                حسابي
+              </Link>
               <Link
                 href="/our-work"
                 className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.05] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
@@ -433,6 +496,7 @@ export function ServicesPageClient() {
                     const primaryPreviewImage = getPrimaryPreviewImage(product);
                     const supportsCustomization = hasProductCustomizationOptions(product.customization_options);
                     const soldOut = isProductSoldOut(product);
+                    const isFavorite = favoriteIds.includes(product.id);
                     const previewGalleryItems = product.preview_images
                       .map((image) => ({
                         id: image.id,
@@ -492,11 +556,27 @@ export function ServicesPageClient() {
                             >
                               {getProductStockLabel(product)}
                             </span>
-                            {product.video_url ? (
-                              <span className="rounded-full border border-white/12 bg-black/55 px-3 py-1 text-[11px] font-semibold text-white">
-                                فيديو
-                              </span>
-                            ) : null}
+                            <div className="pointer-events-auto flex items-center gap-2">
+                              {product.video_url ? (
+                                <span className="rounded-full border border-white/12 bg-black/55 px-3 py-1 text-[11px] font-semibold text-white">
+                                  فيديو
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => void toggleFavorite(product.id)}
+                                className={cn(
+                                  "inline-flex h-9 w-9 items-center justify-center rounded-full border bg-black/55 text-white transition hover:border-ajn-gold/35 hover:text-ajn-gold",
+                                  isFavorite
+                                    ? "border-ajn-gold/45 text-ajn-gold"
+                                    : "border-white/12",
+                                )}
+                                aria-label={isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                                title={customerLoggedIn ? (isFavorite ? "إزالة من المفضلة" : "إضافة إلى المفضلة") : "سجل الدخول للمفضلة"}
+                              >
+                                <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div className="space-y-3 p-4 sm:p-[18px]">

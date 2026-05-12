@@ -14,6 +14,15 @@ export type ProductImageFit = (typeof SHOP_PRODUCT_IMAGE_FITS)[number];
 export type ProductImagePosition = (typeof SHOP_PRODUCT_IMAGE_POSITIONS)[number];
 export type PortfolioCategory = (typeof PORTFOLIO_CATEGORIES)[number];
 export type ProductColorLibraryItem = (typeof SHOP_PRODUCT_COLOR_LIBRARY)[number];
+export type CustomerNotificationType =
+  | "order_received"
+  | "order_accepted"
+  | "preparing"
+  | "out_for_delivery"
+  | "delivered"
+  | "cancelled"
+  | "manual"
+  | "general";
 
 export interface ProductColorOption {
   id: string;
@@ -38,6 +47,53 @@ export interface DeliveryRegionConfig {
   delivery_type: string;
   sort_order: number;
   is_active: boolean;
+}
+
+export interface CustomerUserRecord {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerAddressRecord {
+  id: string;
+  customer_id: string;
+  label: string;
+  province: string;
+  district: string;
+  address: string;
+  phone: string;
+  location_lat: number | null;
+  location_lng: number | null;
+  google_maps_url: string;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerNotificationRecord {
+  id: string;
+  customer_id: string;
+  order_id: string | null;
+  shop_order_id: string | null;
+  title: string;
+  body: string;
+  type: CustomerNotificationType;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface DeliveryAgentRecord {
+  id: string;
+  name: string;
+  phone: string;
+  username: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductCustomizationOptions {
@@ -140,6 +196,7 @@ export interface ShopOrderRecord {
   id: string;
   order_code: string;
   phone_last4: string;
+  customer_user_id: string | null;
   customer_name: string;
   phone: string;
   city: string;
@@ -160,6 +217,9 @@ export interface ShopOrderRecord {
   total: number;
   status: ShopOrderStatus;
   stock_restored: boolean;
+  assigned_driver_id: string | null;
+  assigned_driver_name: string;
+  assigned_at: string | null;
   print_status: ShopPrintStatus;
   printed_at: string | null;
   print_attempts: number;
@@ -187,6 +247,28 @@ export interface ShopCartItem {
 export interface ShopCatalogPayload {
   categories: ShopCategoryNode[];
   settings: ShopSettingsRecord;
+}
+
+export interface CustomerAccountDashboardPayload {
+  customer: CustomerUserRecord;
+  addresses: CustomerAddressRecord[];
+  favorites: ProductRecord[];
+  notifications: CustomerNotificationRecord[];
+  shopOrders: ShopOrderRecord[];
+  bookingOrders: import("@/lib/types").OrderRecord[];
+}
+
+export interface ShopAnalyticsRecord {
+  totalShopOrders: number;
+  totalBookings: number;
+  completedShopOrders: number;
+  cancelledShopOrders: number;
+  dailyRevenue: number;
+  monthlyRevenue: number;
+  topProducts: Array<{ product_id: string | null; product_name: string; quantity: number; total: number }>;
+  topProvinces: Array<{ province: string; count: number; total: number }>;
+  outOfStockProducts: ProductRecord[];
+  recentShopOrders: ShopOrderRecord[];
 }
 
 export const SHOP_SETTINGS_DEFAULTS: Pick<

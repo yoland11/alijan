@@ -98,3 +98,18 @@ export interface AdminTokenPayload {
   role: "admin";
   username: string;
 }
+
+export interface CustomerTokenPayload {
+  role: "customer";
+  customerId: string;
+  phone: string;
+  email: string;
+  fullName: string;
+}
+
+export interface DriverTokenPayload {
+  role: "driver";
+  driverId: string;
+  username: string;
+  name: string;
+}

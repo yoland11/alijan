@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Search } from "lucide-react";
+import { Copy, Receipt, Search } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -51,6 +51,21 @@ export function ShopOrderSuccessClient() {
                 >
                   <Search className="h-4 w-4" />
                   تتبع الطلب
+                </Link>
+
+                <Link
+                  href={`/shop-receipt/${encodeURIComponent(orderCode)}`}
+                  className="inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-5 text-sm font-semibold text-white transition duration-300 hover:bg-white/[0.08]"
+                >
+                  <Receipt className="h-4 w-4" />
+                  الفاتورة
+                </Link>
+
+                <Link
+                  href="/account"
+                  className="inline-flex h-[3.125rem] w-full items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-5 text-sm font-semibold text-white transition duration-300 hover:bg-white/[0.08]"
+                >
+                  حسابي
                 </Link>
               </div>
             </>

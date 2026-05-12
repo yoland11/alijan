@@ -1,6 +1,16 @@
 "use client";
 
-import { Copy, ExternalLink, MessageCircleMore, Package2, Printer, Receipt, Trash2 } from "lucide-react";
+import {
+  BellRing,
+  Copy,
+  ExternalLink,
+  MessageCircleMore,
+  Package2,
+  Printer,
+  Receipt,
+  Trash2,
+  Truck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { SHOP_ORDER_STATUSES, SHOP_PAYMENT_METHOD_LABELS } from "@/lib/shop-constants";
-import type { ShopOrderRecord } from "@/lib/shop-types";
+import type { DeliveryAgentRecord, ShopOrderRecord } from "@/lib/shop-types";
 import {
   buildProductImageProxyUrl,
   buildShopOrderWhatsAppUrl,
@@ -19,18 +29,28 @@ import { formatAmountWithCurrency, formatDateTime } from "@/lib/utils";
 export function ShopOrdersManager() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<ShopOrderRecord[]>([]);
+  const [drivers, setDrivers] = useState<DeliveryAgentRecord[]>([]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/admin/shop/orders", { cache: "no-store" });
-      const payload = (await response.json()) as { message?: string; orders?: ShopOrderRecord[] };
+      const [ordersResponse, driversResponse] = await Promise.all([
+        fetch("/api/admin/shop/orders", { cache: "no-store" }),
+        fetch("/api/admin/shop/drivers", { cache: "no-store" }),
+      ]);
+      const ordersPayload = (await ordersResponse.json()) as { message?: string; orders?: ShopOrderRecord[] };
+      const driversPayload = (await driversResponse.json()) as { message?: string; drivers?: DeliveryAgentRecord[] };
 
-      if (!response.ok) {
-        throw new Error(payload.message || "تعذر تحميل طلبات المتجر.");
+      if (!ordersResponse.ok) {
+        throw new Error(ordersPayload.message || "تعذر تحميل طلبات المتجر.");
       }
 
-      setOrders(payload.orders ?? []);
+      if (!driversResponse.ok) {
+        throw new Error(driversPayload.message || "تعذر تحميل المندوبين.");
+      }
+
+      setOrders(ordersPayload.orders ?? []);
+      setDrivers(driversPayload.drivers ?? []);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تحميل طلبات المتجر.");
     } finally {
@@ -65,6 +85,28 @@ export function ShopOrdersManager() {
       await loadOrders();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تحديث الحالة.");
+    }
+  };
+
+  const assignDriver = async (orderId: string, driverId: string) => {
+    try {
+      const response = await fetch(`/api/admin/shop/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ assigned_driver_id: driverId }),
+      });
+      const payload = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر تعيين المندوب.");
+      }
+
+      toast.success(driverId ? "تم تعيين المندوب." : "تم إلغاء تعيين المندوب.");
+      await loadOrders();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تعيين المندوب.");
     }
   };
 
@@ -141,6 +183,47 @@ export function ShopOrdersManager() {
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
 
+  const sendManualNotification = async (order: ShopOrderRecord) => {
+    if (!order.customer_user_id) {
+      toast.error("هذا الطلب غير مرتبط بحساب زبون.");
+      return;
+    }
+
+    const title = window.prompt("عنوان الإشعار", "تحديث على الطلب");
+    if (!title) {
+      return;
+    }
+
+    const body = window.prompt("نص الإشعار", `تم تحديث طلبك ${order.order_code}.`);
+    if (!body) {
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/admin/shop/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customer_id: order.customer_user_id,
+          shop_order_id: order.id,
+          title,
+          body,
+        }),
+      });
+      const payload = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.message || "تعذر إرسال الإشعار.");
+      }
+
+      toast.success(payload.message || "تم إرسال الإشعار.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر إرسال الإشعار.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid gap-4 lg:grid-cols-2">
@@ -183,6 +266,7 @@ export function ShopOrdersManager() {
                 <p>الطلب: {formatDateTime(order.created_at)}</p>
                 <p>الدفع: {SHOP_PAYMENT_METHOD_LABELS[order.payment_method]}</p>
                 <p>التغليف: {order.wrapping_enabled ? "نعم" : "لا"}</p>
+                <p>المندوب: {order.assigned_driver_name || "غير محدد"}</p>
                 <p>الطباعة: {getPrintStatusLabel(order.print_status)}</p>
                 <p>آخر طباعة: {order.printed_at ? formatDateTime(order.printed_at) : "غير مطبوع"}</p>
                 <p>محاولات الطباعة: {order.print_attempts}</p>
@@ -212,6 +296,19 @@ export function ShopOrdersManager() {
                   </option>
                 ))}
               </Select>
+              <Select
+                value={order.assigned_driver_id ?? ""}
+                onChange={(event) => void assignDriver(order.id, event.target.value)}
+              >
+                <option value="" className="bg-black">
+                  بدون مندوب
+                </option>
+                {drivers.map((driver) => (
+                  <option key={driver.id} value={driver.id} className="bg-black">
+                    {driver.name}
+                  </option>
+                ))}
+              </Select>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button variant="secondary" onClick={() => void copyTrackingCode(order.order_code)}>
                   <Copy className="h-4 w-4" />
@@ -231,6 +328,14 @@ export function ShopOrdersManager() {
                 </Button>
                 <Button
                   variant="secondary"
+                  onClick={() => void sendManualNotification(order)}
+                  disabled={!order.customer_user_id}
+                >
+                  <BellRing className="h-4 w-4" />
+                  إشعار يدوي
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={() => void updatePrintState(order.id, { print_status: "pending", reset_printed_at: true })}
                 >
                   <Printer className="h-4 w-4" />
@@ -240,7 +345,7 @@ export function ShopOrdersManager() {
                   variant="secondary"
                   onClick={() => void updatePrintState(order.id, { print_status: "pending", reset_printed_at: true })}
                 >
-                  <Receipt className="h-4 w-4" />
+                  <Truck className="h-4 w-4" />
                   جعلها pending
                 </Button>
               </div>

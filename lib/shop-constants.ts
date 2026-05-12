@@ -65,6 +65,8 @@ export const SHOP_ORDER_STATUSES = [
   "طلب جديد",
   "قيد التجهيز",
   "جاهز للتوصيل",
+  "استلمت الطلب",
+  "بالطريق",
   "تم التسليم",
   "ملغي",
 ] as const;
@@ -84,6 +86,16 @@ export const SHOP_ORDER_STATUS_STEPS = [
     value: "جاهز للتوصيل",
     label: "جاهز للتوصيل",
     description: "الطلب جاهز للتوصيل.",
+  },
+  {
+    value: "استلمت الطلب",
+    label: "استلمت الطلب",
+    description: "تم استلام الطلب من قبل المندوب.",
+  },
+  {
+    value: "بالطريق",
+    label: "بالطريق",
+    description: "الطلب في الطريق إلى الزبون.",
   },
   {
     value: "تم التسليم",
@@ -204,4 +216,3 @@ export const SHOP_DEFAULT_SETTINGS = {
   delivery_time_text: "40 - 50 دقائق",
   delivery_regions: SHOP_DEFAULT_DELIVERY_REGIONS,
 } as const;
-

@@ -79,6 +79,16 @@ const booleanField = z
     return value === 1;
   });
 
+const emailField = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim().toLowerCase() : ""))
+  .refine((value) => /\S+@\S+\.\S+/.test(value), "البريد الإلكتروني غير صالح.");
+
+const passwordField = z
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : ""))
+  .refine((value) => value.length >= 6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل.");
+
 const imageFitField = z
   .union([z.string(), z.null(), z.undefined()])
   .transform((value) => (typeof value === "string" ? value.trim() : "contain"))
@@ -246,6 +256,16 @@ export const shopOrderStatusSchema = z.object({
 export const shopOrderAdminUpdateSchema = z
   .object({
     status: z.enum(SHOP_ORDER_STATUSES).optional(),
+    assigned_driver_id: z
+      .union([z.string(), z.null(), z.undefined()])
+      .optional()
+      .transform((value) => {
+        if (value === undefined) {
+          return undefined;
+        }
+
+        return typeof value === "string" ? value.trim() : "";
+      }),
     print_status: z.enum(["pending", "printed", "failed"]).optional(),
     printed_at: z.string().nullable().optional(),
     reset_printed_at: booleanField.optional(),
@@ -254,12 +274,73 @@ export const shopOrderAdminUpdateSchema = z
   .refine(
     (value) =>
       value.status !== undefined ||
+      value.assigned_driver_id !== undefined ||
       value.print_status !== undefined ||
       value.printed_at !== undefined ||
       value.reset_printed_at === true ||
       value.increment_print_attempts === true,
     "لا يوجد تحديث صالح.",
   );
+
+export const customerRegisterSchema = z.object({
+  full_name: z.string().min(2, "الاسم مطلوب."),
+  email: emailField,
+  phone: z.string().min(8, "رقم الهاتف غير صالح.").transform((value) => normalizePhone(value)),
+  password: passwordField,
+});
+
+export const customerLoginSchema = z.object({
+  identifier: requiredTextField,
+  password: passwordField,
+});
+
+export const customerResetPasswordSchema = z
+  .object({
+    email: emailField,
+    phone: z.string().min(8, "رقم الهاتف غير صالح.").transform((value) => normalizePhone(value)),
+    password: passwordField,
+    confirm_password: passwordField,
+  })
+  .refine((value) => value.password === value.confirm_password, {
+    message: "تأكيد كلمة المرور غير مطابق.",
+    path: ["confirm_password"],
+  });
+
+export const customerAddressSchema = z.object({
+  label: requiredTextField,
+  province: requiredTextField,
+  district: requiredTextField,
+  address: requiredTextField,
+  phone: z.string().min(8, "رقم الهاتف غير صالح.").transform((value) => normalizePhone(value)),
+  location_lat: z.number().nullable().optional().default(null),
+  location_lng: z.number().nullable().optional().default(null),
+  google_maps_url: textField,
+  is_default: booleanField.default(false),
+});
+
+export const customerNotificationAdminSchema = z.object({
+  customer_id: requiredTextField,
+  shop_order_id: textField,
+  title: z.string().min(2, "العنوان مطلوب."),
+  body: z.string().min(2, "محتوى الإشعار مطلوب."),
+});
+
+export const deliveryAgentSchema = z.object({
+  name: z.string().min(2, "الاسم مطلوب."),
+  phone: z.string().min(8, "رقم الهاتف غير صالح.").transform((value) => normalizePhone(value)),
+  username: z.string().min(3, "اسم المستخدم مطلوب."),
+  password: passwordField.optional().default(""),
+  is_active: booleanField.default(true),
+});
+
+export const deliveryAgentLoginSchema = z.object({
+  username: requiredTextField,
+  password: passwordField,
+});
+
+export const assignDriverSchema = z.object({
+  driver_id: textField,
+});
 
 export const checkoutItemSchema = z.object({
   product_id: z.string().min(1, "المنتج غير صالح."),
@@ -290,6 +371,7 @@ export const checkoutItemSchema = z.object({
 
 export const checkoutOrderSchema = z
   .object({
+    customer_user_id: textField,
     customer_name: z.string().min(2, "الاسم مطلوب."),
     phone: z
       .string()
@@ -358,6 +440,14 @@ export type ProductSchema = z.infer<typeof productSchema>;
 export type ShopSettingsSchema = z.infer<typeof shopSettingsSchema>;
 export type ShopOrderStatusSchema = z.infer<typeof shopOrderStatusSchema>;
 export type ShopOrderAdminUpdateSchema = z.infer<typeof shopOrderAdminUpdateSchema>;
+export type CustomerRegisterSchema = z.infer<typeof customerRegisterSchema>;
+export type CustomerLoginSchema = z.infer<typeof customerLoginSchema>;
+export type CustomerResetPasswordSchema = z.infer<typeof customerResetPasswordSchema>;
+export type CustomerAddressSchema = z.infer<typeof customerAddressSchema>;
+export type CustomerNotificationAdminSchema = z.infer<typeof customerNotificationAdminSchema>;
+export type DeliveryAgentSchema = z.infer<typeof deliveryAgentSchema>;
+export type DeliveryAgentLoginSchema = z.infer<typeof deliveryAgentLoginSchema>;
+export type AssignDriverSchema = z.infer<typeof assignDriverSchema>;
 export type CheckoutOrderSchema = z.infer<typeof checkoutOrderSchema>;
 export type PortfolioEntrySchema = z.infer<typeof portfolioEntrySchema>;
 
@@ -388,6 +478,7 @@ export function normalizeShopOptionalTextPayload<T extends Record<string, unknow
     stock_quantity: body.stock_quantity ?? null,
     delivery_type: body.delivery_type ?? "",
     delivery_eta: body.delivery_eta ?? "",
+    assigned_driver_id: body.assigned_driver_id ?? "",
     province: body.province ?? "",
     district: body.district ?? "",
     city: body.city ?? "",

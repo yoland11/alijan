@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { AnimatedBackground } from "@/components/ui/animated-background";
 import { FloatingCartPill } from "@/components/ui/floating-cart-pill";
+import { CustomerNotificationBridge } from "@/components/ui/customer-notification-bridge";
 import { FloatingWhatsAppButton } from "@/components/ui/floating-whatsapp-button";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { PageTransitionShell } from "@/components/ui/page-transition-shell";
@@ -13,12 +14,15 @@ import { ScrollProgressBar } from "@/components/ui/scroll-progress-bar";
 export function AppExperience({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hideSiteCredit =
-    pathname.startsWith("/admin/invoices/") || pathname.startsWith("/shop-invoice/");
+    pathname.startsWith("/admin/invoices/") ||
+    pathname.startsWith("/shop-invoice/") ||
+    pathname.startsWith("/shop-receipt/");
 
   return (
     <>
       <AnimatedBackground />
       <ScrollProgressBar />
+      <CustomerNotificationBridge />
       <div className="relative z-10">
         <PageTransitionShell>{children}</PageTransitionShell>
         {!hideSiteCredit ? (

@@ -8,7 +8,9 @@ import type {
   ShopOrderStatusSchema,
   ShopSettingsSchema,
 } from "@/lib/shop-validators";
+import { createCustomerNotification, resolveCustomerIdForShopOrder } from "@/lib/server/accounts";
 import type {
+  CustomerNotificationType,
   PortfolioEntryRecord,
   ProductRecord,
   ServiceCategoryRecord,
@@ -35,6 +37,49 @@ import { createServiceSupabaseClient } from "@/lib/supabase/server";
 import { getLastFourDigits, normalizeTrackingQuery } from "@/lib/utils";
 
 type ShopInventoryAction = "none" | "restored" | "reserved";
+
+function getShopStatusNotification(status: ShopOrderRecord["status"]) {
+  switch (status) {
+    case "طلب جديد":
+      return {
+        type: "order_received" as const,
+        title: "تم استلام الطلب",
+        body: "تم استلام طلبك بنجاح.",
+      };
+    case "قيد التجهيز":
+      return {
+        type: "order_accepted" as const,
+        title: "تم قبول الطلب",
+        body: "تم قبول طلبك وبدأنا التجهيز.",
+      };
+    case "جاهز للتوصيل":
+    case "استلمت الطلب":
+    case "بالطريق":
+      return {
+        type: "out_for_delivery" as const,
+        title: "خرج للتوصيل",
+        body: "طلبك الآن في مرحلة التوصيل.",
+      };
+    case "تم التسليم":
+      return {
+        type: "delivered" as const,
+        title: "تم التسليم",
+        body: "تم تسليم طلبك بنجاح.",
+      };
+    case "ملغي":
+      return {
+        type: "cancelled" as const,
+        title: "تم إلغاء الطلب",
+        body: "تم إلغاء الطلب الحالي.",
+      };
+    default:
+      return {
+        type: "general" as const,
+        title: "تحديث على الطلب",
+        body: `تم تحديث حالة الطلب إلى ${status}.`,
+      };
+  }
+}
 
 async function hydrateShopOrders(ordersData: Record<string, unknown>[]) {
   const supabase = createServiceSupabaseClient();
@@ -185,6 +230,26 @@ async function generateUniqueShopOrderCode(phoneLast4: string) {
   }
 
   return `${baseCode}-${suffix}`;
+}
+
+async function notifyCustomerForShopOrder(
+  order: ShopOrderRecord,
+  override?: { title: string; body: string; type?: CustomerNotificationType },
+) {
+  const customerId = await resolveCustomerIdForShopOrder(order);
+
+  if (!customerId) {
+    return;
+  }
+
+  const notification = override ?? getShopStatusNotification(order.status);
+  await createCustomerNotification({
+    customerId,
+    shopOrderId: order.id,
+    title: notification.title,
+    body: notification.body,
+    type: notification.type,
+  });
 }
 
 async function fetchCategories(activeOnly = false) {
@@ -425,7 +490,7 @@ export async function searchShopOrders(query: string) {
 }
 
 export async function updateShopOrderStatus(id: string, input: ShopOrderStatusSchema) {
-  const result = await updateShopOrderAdminState(id, { status: input.status });
+  const result = await updateShopOrderAdminState(id, { status: input.status, assigned_driver_id: undefined });
   return result.order;
 }
 
@@ -440,6 +505,8 @@ export async function updateShopOrderAdminState(id: string, input: ShopOrderAdmi
   const nextAttempts = input.increment_print_attempts ? existing.print_attempts + 1 : existing.print_attempts;
   let inventoryAction: ShopInventoryAction = "none";
   const payload: Record<string, unknown> = { print_attempts: nextAttempts };
+  let statusChanged = false;
+  let assignmentChanged = false;
   if (input.status !== undefined) {
     const nextStatus = input.status;
     const isCancelling = nextStatus === "ملغي" && !existing.stock_restored;
@@ -458,6 +525,38 @@ export async function updateShopOrderAdminState(id: string, input: ShopOrderAdmi
     }
 
     payload.status = nextStatus;
+    statusChanged = nextStatus !== existing.status;
+  }
+
+  if (input.assigned_driver_id !== undefined) {
+    const nextDriverId = input.assigned_driver_id || null;
+    assignmentChanged = nextDriverId !== existing.assigned_driver_id;
+
+    if (nextDriverId) {
+      const { data: driverData, error: driverError } = await supabase
+        .from("delivery_agents")
+        .select("*")
+        .eq("id", nextDriverId)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (driverError) {
+        throw new Error(driverError.message);
+      }
+
+      if (!driverData) {
+        throw new Error("المندوب غير متاح.");
+      }
+
+      payload.assigned_driver_id = String((driverData as Record<string, unknown>).id ?? "");
+      payload.assigned_driver_name = String((driverData as Record<string, unknown>).name ?? "");
+      payload.assigned_at = new Date().toISOString();
+    } else {
+      payload.assigned_driver_id = null;
+      payload.assigned_driver_name = "";
+      payload.assigned_at = null;
+    }
   }
   if (input.print_status !== undefined) payload.print_status = input.print_status;
   if (input.reset_printed_at) payload.printed_at = null;
@@ -485,8 +584,28 @@ export async function updateShopOrderAdminState(id: string, input: ShopOrderAdmi
   }
 
   const items = (itemsData ?? []).map((item) => normalizeShopOrderItemRecord(item as Record<string, unknown>));
+  const order = normalizeShopOrderRecord(data as Record<string, unknown>, items);
+
+  if (statusChanged) {
+    try {
+      await notifyCustomerForShopOrder(order);
+    } catch (error) {
+      console.error("Failed to send shop order status notification", error);
+    }
+  } else if (assignmentChanged && order.assigned_driver_name) {
+    try {
+      await notifyCustomerForShopOrder(order, {
+        type: "manual",
+        title: "تم تعيين مندوب التوصيل",
+        body: `تم تعيين ${order.assigned_driver_name} لتوصيل طلبك.`,
+      });
+    } catch (error) {
+      console.error("Failed to send driver assignment notification", error);
+    }
+  }
+
   return {
-    order: normalizeShopOrderRecord(data as Record<string, unknown>, items),
+    order,
     inventoryAction,
   };
 }
@@ -591,6 +710,7 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
       .insert({
         order_code: orderCode,
         phone_last4: phoneLast4,
+        customer_user_id: input.customer_user_id || null,
         customer_name: input.customer_name,
         phone: input.phone,
         city: input.city,
@@ -674,8 +794,15 @@ export async function createShopOrder(input: CheckoutOrderSchema) {
   const normalizedItems = (itemsData ?? []).map((item) =>
     normalizeShopOrderItemRecord(item as Record<string, unknown>),
   );
+  const order = normalizeShopOrderRecord(orderData, normalizedItems);
 
-  return normalizeShopOrderRecord(orderData, normalizedItems);
+  try {
+    await notifyCustomerForShopOrder(order);
+  } catch (error) {
+    console.error("Failed to send shop order creation notification", error);
+  }
+
+  return order;
 }
 
 export async function listPortfolioEntries(activeOnly = true) {
@@ -737,7 +864,7 @@ export async function deletePortfolioEntry(id: string) {
   }
 }
 
-async function getShopOrderById(id: string) {
+export async function getShopOrderById(id: string) {
   const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase.from("shop_orders").select("*").eq("id", id).limit(1).maybeSingle();
 

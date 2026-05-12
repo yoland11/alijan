@@ -151,6 +151,7 @@ create table if not exists public.shop_orders (
   id uuid primary key default gen_random_uuid(),
   order_code text,
   phone_last4 text,
+  customer_user_id uuid,
   customer_name text not null,
   phone text not null,
   city text not null,
@@ -169,8 +170,11 @@ create table if not exists public.shop_orders (
   delivery_fee numeric(12,2) not null default 0,
   subtotal numeric(12,2) not null default 0,
   total numeric(12,2) not null default 0,
-  status text not null check (status in ('طلب جديد', 'قيد التجهيز', 'جاهز للتوصيل', 'تم التسليم', 'ملغي')),
+  status text not null check (status in ('طلب جديد', 'قيد التجهيز', 'جاهز للتوصيل', 'استلمت الطلب', 'بالطريق', 'تم التسليم', 'ملغي')),
   stock_restored boolean not null default false,
+  assigned_driver_id uuid,
+  assigned_driver_name text not null default ''::text,
+  assigned_at timestamptz,
   printed_at timestamptz,
   print_status text not null default 'pending' check (print_status in ('pending', 'printed', 'failed')),
   print_attempts integer not null default 0,
@@ -181,14 +185,25 @@ create table if not exists public.shop_orders (
 alter table public.shop_orders
   add column if not exists order_code text,
   add column if not exists phone_last4 text,
+  add column if not exists customer_user_id uuid,
   add column if not exists province text not null default '',
   add column if not exists district text not null default '',
   add column if not exists delivery_type text not null default '',
   add column if not exists delivery_eta text not null default '',
   add column if not exists stock_restored boolean not null default false,
+  add column if not exists assigned_driver_id uuid,
+  add column if not exists assigned_driver_name text not null default '',
+  add column if not exists assigned_at timestamptz,
   add column if not exists printed_at timestamptz,
   add column if not exists print_status text not null default 'pending',
   add column if not exists print_attempts integer not null default 0;
+
+alter table public.shop_orders
+  drop constraint if exists shop_orders_status_check;
+
+alter table public.shop_orders
+  add constraint shop_orders_status_check
+  check (status in ('طلب جديد', 'قيد التجهيز', 'جاهز للتوصيل', 'استلمت الطلب', 'بالطريق', 'تم التسليم', 'ملغي'));
 
 alter table public.shop_orders
   drop constraint if exists shop_orders_print_status_check;
@@ -255,6 +270,83 @@ create table if not exists public.portfolio_entries (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.customer_users (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null default ''::text,
+  email text not null,
+  phone text not null,
+  password_hash text not null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.customer_addresses (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customer_users(id) on delete cascade,
+  label text not null default ''::text,
+  province text not null default ''::text,
+  district text not null default ''::text,
+  address text not null default ''::text,
+  phone text not null default ''::text,
+  location_lat numeric(10,7),
+  location_lng numeric(10,7),
+  google_maps_url text not null default ''::text,
+  is_default boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.customer_favorites (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customer_users(id) on delete cascade,
+  product_id uuid not null references public.products(id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.customer_notifications (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customer_users(id) on delete cascade,
+  order_id uuid references public.orders(id) on delete set null,
+  shop_order_id uuid references public.shop_orders(id) on delete set null,
+  title text not null default ''::text,
+  body text not null default ''::text,
+  type text not null default 'general'::text,
+  is_read boolean not null default false,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.customer_password_resets (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customer_users(id) on delete cascade,
+  token text not null,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.delivery_agents (
+  id uuid primary key default gen_random_uuid(),
+  name text not null default ''::text,
+  phone text not null default ''::text,
+  username text not null,
+  password_hash text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+alter table public.shop_orders
+  drop constraint if exists shop_orders_customer_user_id_fkey,
+  drop constraint if exists shop_orders_assigned_driver_id_fkey;
+
+alter table public.shop_orders
+  add constraint shop_orders_customer_user_id_fkey
+  foreign key (customer_user_id) references public.customer_users(id) on delete set null;
+
+alter table public.shop_orders
+  add constraint shop_orders_assigned_driver_id_fkey
+  foreign key (assigned_driver_id) references public.delivery_agents(id) on delete set null;
+
 create index if not exists service_categories_parent_idx on public.service_categories (parent_id);
 create index if not exists service_categories_active_sort_idx on public.service_categories (is_active, sort_order);
 create index if not exists products_category_idx on public.products (category_id);
@@ -265,6 +357,15 @@ create index if not exists shop_orders_status_idx on public.shop_orders (status)
 create index if not exists shop_orders_created_at_idx on public.shop_orders (created_at desc);
 create index if not exists shop_order_items_order_id_idx on public.shop_order_items (order_id);
 create unique index if not exists shop_orders_order_code_unique on public.shop_orders (order_code);
+create unique index if not exists customer_users_email_unique on public.customer_users (lower(email));
+create unique index if not exists customer_users_phone_unique on public.customer_users (phone);
+create unique index if not exists customer_favorites_customer_product_unique on public.customer_favorites (customer_id, product_id);
+create unique index if not exists customer_password_resets_token_unique on public.customer_password_resets (token);
+create unique index if not exists delivery_agents_username_unique on public.delivery_agents (username);
+create index if not exists customer_notifications_customer_created_idx on public.customer_notifications (customer_id, created_at desc);
+create index if not exists customer_addresses_customer_idx on public.customer_addresses (customer_id);
+create index if not exists shop_orders_customer_user_idx on public.shop_orders (customer_user_id);
+create index if not exists shop_orders_assigned_driver_idx on public.shop_orders (assigned_driver_id);
 
 create or replace function public.set_row_updated_at()
 returns trigger
@@ -309,6 +410,24 @@ execute function public.set_row_updated_at();
 drop trigger if exists set_portfolio_entries_updated_at on public.portfolio_entries;
 create trigger set_portfolio_entries_updated_at
 before update on public.portfolio_entries
+for each row
+execute function public.set_row_updated_at();
+
+drop trigger if exists set_customer_users_updated_at on public.customer_users;
+create trigger set_customer_users_updated_at
+before update on public.customer_users
+for each row
+execute function public.set_row_updated_at();
+
+drop trigger if exists set_customer_addresses_updated_at on public.customer_addresses;
+create trigger set_customer_addresses_updated_at
+before update on public.customer_addresses
+for each row
+execute function public.set_row_updated_at();
+
+drop trigger if exists set_delivery_agents_updated_at on public.delivery_agents;
+create trigger set_delivery_agents_updated_at
+before update on public.delivery_agents
 for each row
 execute function public.set_row_updated_at();
 

@@ -6,7 +6,9 @@ import { Filter, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { ShopCatalogManager } from "@/components/admin/shop-catalog-manager";
+import { DeliveryAgentsManager } from "@/components/admin/delivery-agents-manager";
 import { ShopOrdersManager } from "@/components/admin/shop-orders-manager";
+import { ShopAnalyticsManager } from "@/components/admin/shop-analytics-manager";
 import { ShopSettingsManager } from "@/components/admin/shop-settings-manager";
 import { PortfolioManager } from "@/components/admin/portfolio-manager";
 import { LogoutButton } from "@/components/admin/logout-button";
@@ -33,9 +35,9 @@ import {
 import type { OrderSchema } from "@/lib/validators";
 
 export function DashboardClient() {
-  const [adminSection, setAdminSection] = useState<"orders" | "catalog" | "shopOrders" | "portfolio" | "settings">(
-    "orders",
-  );
+  const [adminSection, setAdminSection] = useState<
+    "orders" | "catalog" | "shopOrders" | "analytics" | "drivers" | "portfolio" | "settings"
+  >("orders");
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -279,6 +281,12 @@ export function DashboardClient() {
               <SectionTab active={adminSection === "shopOrders"} onClick={() => setAdminSection("shopOrders")}>
                 طلبات المتجر
               </SectionTab>
+              <SectionTab active={adminSection === "analytics"} onClick={() => setAdminSection("analytics")}>
+                الإحصائيات
+              </SectionTab>
+              <SectionTab active={adminSection === "drivers"} onClick={() => setAdminSection("drivers")}>
+                المندوبون
+              </SectionTab>
               <SectionTab active={adminSection === "portfolio"} onClick={() => setAdminSection("portfolio")}>
                 إدارة أعمالنا
               </SectionTab>
@@ -389,6 +397,8 @@ export function DashboardClient() {
 
           {adminSection === "catalog" ? <ShopCatalogManager /> : null}
           {adminSection === "shopOrders" ? <ShopOrdersManager /> : null}
+          {adminSection === "analytics" ? <ShopAnalyticsManager /> : null}
+          {adminSection === "drivers" ? <DeliveryAgentsManager /> : null}
           {adminSection === "portfolio" ? <PortfolioManager /> : null}
           {adminSection === "settings" ? <ShopSettingsManager /> : null}
         </div>

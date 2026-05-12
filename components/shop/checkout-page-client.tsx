@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { PreviewImage } from "@/components/ui/preview-image";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ShopSettingsRecord, ShopPaymentMethod } from "@/lib/shop-types";
+import type { CustomerAddressRecord, ShopSettingsRecord, ShopPaymentMethod } from "@/lib/shop-types";
 import {
   buildGoogleMapsUrl,
   buildProductImageProxyUrl,
@@ -54,19 +54,48 @@ export function CheckoutPageClient() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState("");
   const [locating, setLocating] = useState(false);
   const [showManualMap, setShowManualMap] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<CustomerAddressRecord[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/shop/catalog", { cache: "no-store" });
-        const payload = (await response.json()) as { settings?: ShopSettingsRecord; message?: string };
+        const [catalogResponse, accountResponse] = await Promise.all([
+          fetch("/api/shop/catalog", { cache: "no-store" }),
+          fetch("/api/account/dashboard", { cache: "no-store" }),
+        ]);
+        const payload = (await catalogResponse.json()) as { settings?: ShopSettingsRecord; message?: string };
 
-        if (!response.ok) {
+        if (!catalogResponse.ok) {
           throw new Error(payload.message || "تعذر تحميل الإعدادات.");
         }
 
         setSettings(payload.settings ?? defaultSettings);
+
+        if (accountResponse.ok) {
+          const accountPayload = (await accountResponse.json()) as {
+            customer?: { full_name: string; phone: string } | null;
+            addresses?: CustomerAddressRecord[];
+          };
+          const addresses = accountPayload.addresses ?? [];
+          const defaultAddress = addresses.find((item) => item.is_default) ?? addresses[0];
+
+          setSavedAddresses(addresses);
+
+          if (accountPayload.customer) {
+            setCustomerName((current) => current || accountPayload.customer?.full_name || "");
+            setPhone((current) => current || accountPayload.customer?.phone || "");
+          }
+
+          if (defaultAddress) {
+            setSelectedAddressId(defaultAddress.id);
+            setProvince((current) => current || defaultAddress.province);
+            setDistrict((current) => current || defaultAddress.district);
+            setAddress((current) => current || defaultAddress.address);
+            setGoogleMapsUrl((current) => current || defaultAddress.google_maps_url);
+          }
+        }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "تعذر تحميل الإعدادات.");
       } finally {
@@ -228,6 +257,36 @@ export function CheckoutPageClient() {
 
             <CheckoutCard icon={<MapPinned className="h-5 w-5" />} title="عنوان التوصيل">
               <div className="grid gap-4 md:grid-cols-2">
+                {savedAddresses.length ? (
+                  <Select
+                    value={selectedAddressId}
+                    onChange={(event) => {
+                      const nextId = event.target.value;
+                      const nextAddress = savedAddresses.find((item) => item.id === nextId);
+                      setSelectedAddressId(nextId);
+
+                      if (!nextAddress) {
+                        return;
+                      }
+
+                      setProvince(nextAddress.province);
+                      setDistrict(nextAddress.district);
+                      setAddress(nextAddress.address);
+                      setGoogleMapsUrl(nextAddress.google_maps_url);
+                      setPhone((current) => current || nextAddress.phone);
+                    }}
+                    className="md:col-span-2"
+                  >
+                    <option value="" className="bg-black">
+                      اختر عنوانًا محفوظًا
+                    </option>
+                    {savedAddresses.map((item) => (
+                      <option key={item.id} value={item.id} className="bg-black">
+                        {item.label}
+                      </option>
+                    ))}
+                  </Select>
+                ) : null}
                 <Input placeholder="الاسم الكامل" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                 <Input placeholder="رقم الهاتف" value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="numeric" pattern="[0-9]*" />
                 <Select value={province} onChange={(event) => setProvince(event.target.value)}>

@@ -9,7 +9,11 @@ import {
   SHOP_PRODUCT_IMAGE_POSITIONS,
 } from "@/lib/shop-constants";
 import type {
+  CustomerAddressRecord,
+  CustomerNotificationRecord,
+  CustomerUserRecord,
   DeliveryRegionConfig,
+  DeliveryAgentRecord,
   PortfolioCategory,
   PortfolioEntryRecord,
   ProductColorOption,
@@ -386,6 +390,7 @@ export function normalizeShopOrderRecord(
     id: normalizeShopText(raw.id),
     order_code: normalizeShopText(raw.order_code),
     phone_last4: normalizeShopText(raw.phone_last4) || getLastFourDigits(normalizeShopText(raw.phone)),
+    customer_user_id: normalizeShopText(raw.customer_user_id) || null,
     customer_name: normalizeShopText(raw.customer_name),
     phone: normalizePhone(normalizeShopText(raw.phone)),
     city: normalizeShopText(raw.city),
@@ -413,6 +418,9 @@ export function normalizeShopOrderRecord(
     total: parseAmountValue(raw.total as string | number | null | undefined),
     status: normalizeShopText(raw.status) as ShopOrderRecord["status"],
     stock_restored: normalizeBoolean(raw.stock_restored),
+    assigned_driver_id: normalizeShopText(raw.assigned_driver_id) || null,
+    assigned_driver_name: normalizeShopText(raw.assigned_driver_name),
+    assigned_at: normalizeShopText(raw.assigned_at) || null,
     print_status:
       normalizeShopText(raw.print_status) === "printed"
         ? "printed"
@@ -424,6 +432,68 @@ export function normalizeShopOrderRecord(
     created_at: normalizeShopText(raw.created_at),
     updated_at: normalizeShopText(raw.updated_at),
     items,
+  };
+}
+
+export function normalizeCustomerUserRecord(raw: Record<string, unknown>): CustomerUserRecord {
+  return {
+    id: normalizeShopText(raw.id),
+    full_name: normalizeShopText(raw.full_name),
+    email: normalizeShopText(raw.email),
+    phone: normalizePhone(normalizeShopText(raw.phone)),
+    created_at: normalizeShopText(raw.created_at),
+    updated_at: normalizeShopText(raw.updated_at),
+  };
+}
+
+export function normalizeCustomerAddressRecord(raw: Record<string, unknown>): CustomerAddressRecord {
+  return {
+    id: normalizeShopText(raw.id),
+    customer_id: normalizeShopText(raw.customer_id),
+    label: normalizeShopText(raw.label),
+    province: normalizeShopText(raw.province),
+    district: normalizeShopText(raw.district),
+    address: normalizeShopText(raw.address),
+    phone: normalizePhone(normalizeShopText(raw.phone)),
+    location_lat:
+      raw.location_lat === null || raw.location_lat === undefined
+        ? null
+        : parseAmountValue(raw.location_lat as string | number | null | undefined),
+    location_lng:
+      raw.location_lng === null || raw.location_lng === undefined
+        ? null
+        : parseAmountValue(raw.location_lng as string | number | null | undefined),
+    google_maps_url: normalizeShopText(raw.google_maps_url),
+    is_default: normalizeBoolean(raw.is_default),
+    created_at: normalizeShopText(raw.created_at),
+    updated_at: normalizeShopText(raw.updated_at),
+  };
+}
+
+export function normalizeCustomerNotificationRecord(raw: Record<string, unknown>): CustomerNotificationRecord {
+  const type = normalizeShopText(raw.type) as CustomerNotificationRecord["type"];
+  return {
+    id: normalizeShopText(raw.id),
+    customer_id: normalizeShopText(raw.customer_id),
+    order_id: normalizeShopText(raw.order_id) || null,
+    shop_order_id: normalizeShopText(raw.shop_order_id) || null,
+    title: normalizeShopText(raw.title),
+    body: normalizeShopText(raw.body),
+    type: type || "general",
+    is_read: normalizeBoolean(raw.is_read),
+    created_at: normalizeShopText(raw.created_at),
+  };
+}
+
+export function normalizeDeliveryAgentRecord(raw: Record<string, unknown>): DeliveryAgentRecord {
+  return {
+    id: normalizeShopText(raw.id),
+    name: normalizeShopText(raw.name),
+    phone: normalizePhone(normalizeShopText(raw.phone)),
+    username: normalizeShopText(raw.username),
+    is_active: normalizeBoolean(raw.is_active),
+    created_at: normalizeShopText(raw.created_at),
+    updated_at: normalizeShopText(raw.updated_at),
   };
 }
 
