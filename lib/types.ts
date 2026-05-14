@@ -52,6 +52,30 @@ export interface GraduationDetails {
   has_cap: boolean;
 }
 
+export interface ServiceDetails {
+  province: string;
+  address: string;
+  booking_time: string;
+  venue_type: string;
+  chair_count: string;
+  transport_required: boolean;
+  session_location: string;
+  session_kind: string;
+  people_count: string;
+  video_required: boolean;
+  album_type: string;
+  page_count: string;
+  album_size: string;
+  cover_type: string;
+  cover_name: string;
+  university: string;
+  department: string;
+  gift_type: string;
+  recipient_name: string;
+  occasion_date: string;
+  gift_message: string;
+}
+
 export interface OrderRecord {
   id: string;
   order_code: string;
@@ -64,6 +88,7 @@ export interface OrderRecord {
   research_details: ResearchDetails;
   research_files: ResearchFileRecord[];
   graduation_details: GraduationDetails;
+  service_details: ServiceDetails;
   booking_date: string;
   status: OrderStatus;
   notes: string;
@@ -85,6 +110,7 @@ export interface OrderFormValues {
   research_details: ResearchDetails;
   research_files: ResearchFileRecord[];
   graduation_details: GraduationDetails;
+  service_details: ServiceDetails;
   booking_date: string;
   status: OrderStatus;
   notes: string;

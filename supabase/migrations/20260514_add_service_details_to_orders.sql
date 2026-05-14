@@ -1,0 +1,2 @@
+alter table public.orders
+  add column if not exists service_details jsonb not null default '{"province":"","address":"","booking_time":"","venue_type":"","chair_count":"","transport_required":false,"session_location":"","session_kind":"","people_count":"","video_required":false,"album_type":"","page_count":"","album_size":"","cover_type":"","cover_name":"","university":"","department":"","gift_type":"","recipient_name":"","occasion_date":"","gift_message":""}'::jsonb;

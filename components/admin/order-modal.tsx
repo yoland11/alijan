@@ -31,6 +31,7 @@ import {
   calculateRemainingAmount,
   createEmptyGraduationDetails,
   createEmptyResearchDetails,
+  createEmptyServiceDetails,
   formatAmountInputValue,
   formatAmountWithCurrency,
   getInitialStatusForService,
@@ -73,6 +74,7 @@ const defaultValues: OrderFormInput = {
   research_details: createEmptyResearchDetails(),
   research_files: [],
   graduation_details: createEmptyGraduationDetails(),
+  service_details: createEmptyServiceDetails(),
   booking_date: new Date().toISOString().split("T")[0],
   status: getInitialStatusForService("Album"),
   notes: "",
@@ -107,6 +109,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
   const researchDetails = useWatch({ control, name: "research_details" }) ?? createEmptyResearchDetails();
   const graduationDetails =
     useWatch({ control, name: "graduation_details" }) ?? createEmptyGraduationDetails();
+  const serviceDetails = useWatch({ control, name: "service_details" }) ?? createEmptyServiceDetails();
   const totalAmountInput = useWatch({ control, name: "total_amount" }) ?? "0";
   const receivedAmountInput = useWatch({ control, name: "received_amount" }) ?? "0";
   const remainingAmount = calculateRemainingAmount(totalAmountInput, receivedAmountInput);
@@ -139,6 +142,7 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
             research_details: order.research_details,
             research_files: order.research_files,
             graduation_details: order.graduation_details,
+            service_details: order.service_details,
             booking_date: order.booking_date,
             status: normalizeStatusForService(order.status, order.service_type),
             notes: order.notes,
@@ -862,6 +866,216 @@ export function OrderModal({ open, order, busy, onClose, onSubmit }: OrderModalP
                   </div>
                 </div>
               </AnimatedServicePanel>
+            ) : null}
+
+            {serviceType === "Koshat" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات الكوشات</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">المحافظة</label>
+                    <Input {...register("service_details.province")} />
+                    {errors.service_details?.province ? <p className="mt-2 text-sm text-red-300">{errors.service_details.province.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">العنوان</label>
+                    <Input {...register("service_details.address")} />
+                    {errors.service_details?.address ? <p className="mt-2 text-sm text-red-300">{errors.service_details.address.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">وقت الحجز</label>
+                    <Input type="time" {...register("service_details.booking_time")} />
+                    {errors.service_details?.booking_time ? <p className="mt-2 text-sm text-red-300">{errors.service_details.booking_time.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">عدد الكراسي</label>
+                    <Input {...register("service_details.chair_count")} />
+                    {errors.service_details?.chair_count ? <p className="mt-2 text-sm text-red-300">{errors.service_details.chair_count.message}</p> : null}
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">داخلية / خارجية</label>
+                    <ChoiceButtonGroup
+                      options={["داخلية", "خارجية"].map((type) => ({ value: type, title: type }))}
+                      value={serviceDetails.venue_type ?? ""}
+                      onChange={(value) => setValue("service_details.venue_type", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    />
+                    {errors.service_details?.venue_type ? <p className="mt-2 text-sm text-red-300">{errors.service_details.venue_type.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">النقل</label>
+                    <ChoiceButtonGroup
+                      options={[
+                        { value: "yes", title: "مطلوب" },
+                        { value: "no", title: "غير مطلوب" },
+                      ]}
+                      value={serviceDetails.transport_required ? "yes" : "no"}
+                      onChange={(value) => setValue("service_details.transport_required", value === "yes", { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {serviceType === "Session" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات التصوير</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">وقت الجلسة</label>
+                    <Input type="time" {...register("service_details.booking_time")} />
+                    {errors.service_details?.booking_time ? <p className="mt-2 text-sm text-red-300">{errors.service_details.booking_time.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">موقع التصوير</label>
+                    <Input {...register("service_details.session_location")} />
+                    {errors.service_details?.session_location ? <p className="mt-2 text-sm text-red-300">{errors.service_details.session_location.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الجلسة</label>
+                    <Input {...register("service_details.session_kind")} />
+                    {errors.service_details?.session_kind ? <p className="mt-2 text-sm text-red-300">{errors.service_details.session_kind.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">عدد الأشخاص</label>
+                    <Input {...register("service_details.people_count")} />
+                    {errors.service_details?.people_count ? <p className="mt-2 text-sm text-red-300">{errors.service_details.people_count.message}</p> : null}
+                  </div>
+                </div>
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">داخلي / خارجي</label>
+                    <ChoiceButtonGroup
+                      options={["داخلية", "خارجية"].map((type) => ({ value: type, title: type }))}
+                      value={serviceDetails.venue_type ?? ""}
+                      onChange={(value) => setValue("service_details.venue_type", value, { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    />
+                    {errors.service_details?.venue_type ? <p className="mt-2 text-sm text-red-300">{errors.service_details.venue_type.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">فيديو</label>
+                    <ChoiceButtonGroup
+                      options={[
+                        { value: "yes", title: "مطلوب" },
+                        { value: "no", title: "غير مطلوب" },
+                      ]}
+                      value={serviceDetails.video_required ? "yes" : "no"}
+                      onChange={(value) => setValue("service_details.video_required", value === "yes", { shouldDirty: true, shouldTouch: true, shouldValidate: true })}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {serviceType === "Album" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات الألبوم</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الألبوم</label>
+                    <Input {...register("service_details.album_type")} />
+                    {errors.service_details?.album_type ? <p className="mt-2 text-sm text-red-300">{errors.service_details.album_type.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">عدد الصفحات</label>
+                    <Input {...register("service_details.page_count")} />
+                    {errors.service_details?.page_count ? <p className="mt-2 text-sm text-red-300">{errors.service_details.page_count.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">المقاس</label>
+                    <Input {...register("service_details.album_size")} />
+                    {errors.service_details?.album_size ? <p className="mt-2 text-sm text-red-300">{errors.service_details.album_size.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الغلاف</label>
+                    <Input {...register("service_details.cover_type")} />
+                    {errors.service_details?.cover_type ? <p className="mt-2 text-sm text-red-300">{errors.service_details.cover_type.message}</p> : null}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">الاسم على الغلاف</label>
+                    <Input {...register("service_details.cover_name")} />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {serviceType === "Research" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات الجامعة</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">الجامعة</label>
+                    <Input {...register("service_details.university")} />
+                    {errors.service_details?.university ? <p className="mt-2 text-sm text-red-300">{errors.service_details.university.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">القسم</label>
+                    <Input {...register("service_details.department")} />
+                    {errors.service_details?.department ? <p className="mt-2 text-sm text-red-300">{errors.service_details.department.message}</p> : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {serviceType === "Graduation" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات التسليم</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">المحافظة</label>
+                    <Input {...register("service_details.province")} />
+                    {errors.service_details?.province ? <p className="mt-2 text-sm text-red-300">{errors.service_details.province.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">العنوان</label>
+                    <Input {...register("service_details.address")} />
+                    {errors.service_details?.address ? <p className="mt-2 text-sm text-red-300">{errors.service_details.address.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">وقت الحجز</label>
+                    <Input type="time" {...register("service_details.booking_time")} />
+                    {errors.service_details?.booking_time ? <p className="mt-2 text-sm text-red-300">{errors.service_details.booking_time.message}</p> : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {serviceType === "Gifts" ? (
+              <div className="rounded-[30px] border border-ajn-line bg-white/[0.03] p-5 sm:p-6">
+                <h3 className="mb-5 text-xl font-bold text-white">بيانات الهدية</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">المحافظة</label>
+                    <Input {...register("service_details.province")} />
+                    {errors.service_details?.province ? <p className="mt-2 text-sm text-red-300">{errors.service_details.province.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">العنوان</label>
+                    <Input {...register("service_details.address")} />
+                    {errors.service_details?.address ? <p className="mt-2 text-sm text-red-300">{errors.service_details.address.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">نوع الهدية</label>
+                    <Input {...register("service_details.gift_type")} />
+                    {errors.service_details?.gift_type ? <p className="mt-2 text-sm text-red-300">{errors.service_details.gift_type.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">اسم المستلم</label>
+                    <Input {...register("service_details.recipient_name")} />
+                    {errors.service_details?.recipient_name ? <p className="mt-2 text-sm text-red-300">{errors.service_details.recipient_name.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">تاريخ المناسبة</label>
+                    <Input type="date" {...register("service_details.occasion_date")} />
+                    {errors.service_details?.occasion_date ? <p className="mt-2 text-sm text-red-300">{errors.service_details.occasion_date.message}</p> : null}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm text-ajn-goldSoft">رسالة الهدية</label>
+                    <Textarea {...register("service_details.gift_message")} rows={3} />
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             <div className="grid gap-5 md:grid-cols-3">

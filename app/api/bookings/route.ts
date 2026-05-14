@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const preparedOrder = orderSchema.safeParse({
       ...customerPayload.data,
       status: getInitialStatusForService(customerPayload.data.service_type),
-      images: [],
+      images: customerPayload.data.images ?? [],
       total_amount: 0,
       received_amount: 0,
     });

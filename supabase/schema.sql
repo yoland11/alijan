@@ -12,6 +12,7 @@ create table if not exists public.orders (
   research_details jsonb not null default '{"title":"","student_names":"","supervisor_name":"","academic_entity":"","delivery_date":"","print_enabled":false,"copy_count":0,"binding_type":""}'::jsonb,
   research_files jsonb not null default '[]'::jsonb,
   graduation_details jsonb not null default '{"package_type":"","sash_type":"","robe_type":"","writing_type":"","measurements":{"sash_length":"","shoulder":"","robe_length":"","hand":""},"has_cap":false}'::jsonb,
+  service_details jsonb not null default '{"province":"","address":"","booking_time":"","venue_type":"","chair_count":"","transport_required":false,"session_location":"","session_kind":"","people_count":"","video_required":false,"album_type":"","page_count":"","album_size":"","cover_type":"","cover_name":"","university":"","department":"","gift_type":"","recipient_name":"","occasion_date":"","gift_message":""}'::jsonb,
   booking_date date not null,
   status text not null check (
     status in (

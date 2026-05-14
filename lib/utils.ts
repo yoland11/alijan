@@ -30,6 +30,7 @@ import type {
   ResearchBindingType,
   ResearchDetails,
   ResearchFileRecord,
+  ServiceDetails,
   ServiceType,
 } from "@/lib/types";
 
@@ -206,6 +207,32 @@ export function createEmptyGraduationDetails(): GraduationDetails {
     writing_type: "",
     measurements: createEmptyGraduationMeasurements(),
     has_cap: false,
+  };
+}
+
+export function createEmptyServiceDetails(): ServiceDetails {
+  return {
+    province: "",
+    address: "",
+    booking_time: "",
+    venue_type: "",
+    chair_count: "",
+    transport_required: false,
+    session_location: "",
+    session_kind: "",
+    people_count: "",
+    video_required: false,
+    album_type: "",
+    page_count: "",
+    album_size: "",
+    cover_type: "",
+    cover_name: "",
+    university: "",
+    department: "",
+    gift_type: "",
+    recipient_name: "",
+    occasion_date: "",
+    gift_message: "",
   };
 }
 
@@ -452,6 +479,38 @@ export function normalizeGraduationDetails(value: unknown): GraduationDetails {
   };
 }
 
+export function normalizeServiceDetails(value: unknown): ServiceDetails {
+  if (!value || typeof value !== "object") {
+    return createEmptyServiceDetails();
+  }
+
+  const raw = value as Record<string, unknown>;
+
+  return {
+    province: normalizeTextField(raw.province),
+    address: normalizeTextField(raw.address),
+    booking_time: normalizeTextField(raw.booking_time),
+    venue_type: normalizeTextField(raw.venue_type),
+    chair_count: normalizeTextField(raw.chair_count),
+    transport_required: normalizeBoolean(raw.transport_required),
+    session_location: normalizeTextField(raw.session_location),
+    session_kind: normalizeTextField(raw.session_kind),
+    people_count: normalizeTextField(raw.people_count),
+    video_required: normalizeBoolean(raw.video_required),
+    album_type: normalizeTextField(raw.album_type),
+    page_count: normalizeTextField(raw.page_count),
+    album_size: normalizeTextField(raw.album_size),
+    cover_type: normalizeTextField(raw.cover_type),
+    cover_name: normalizeTextField(raw.cover_name),
+    university: normalizeTextField(raw.university),
+    department: normalizeTextField(raw.department),
+    gift_type: normalizeTextField(raw.gift_type),
+    recipient_name: normalizeTextField(raw.recipient_name),
+    occasion_date: normalizeTextField(raw.occasion_date),
+    gift_message: normalizeTextField(raw.gift_message),
+  };
+}
+
 export function getOrderStatusSteps(serviceType: ServiceType = "Album") {
   if (serviceType === "Session") {
     return SESSION_ORDER_STATUS_STEPS;
@@ -619,6 +678,7 @@ export function normalizeOrderRecord(rawOrder: Record<string, unknown>) {
     research_details: normalizeResearchDetails(rawOrder.research_details),
     research_files: normalizeResearchFileRecords(rawOrder.research_files),
     graduation_details: normalizeGraduationDetails(rawOrder.graduation_details),
+    service_details: normalizeServiceDetails(rawOrder.service_details),
     total_amount: parseAmountValue(rawOrder.total_amount as string | number | null | undefined),
     received_amount: parseAmountValue(rawOrder.received_amount as string | number | null | undefined),
     remaining_amount: parseAmountValue(rawOrder.remaining_amount as string | number | null | undefined),
@@ -661,9 +721,90 @@ export function getOrderSearchableText(order: OrderRecord) {
     order.graduation_details.measurements.robe_length,
     order.graduation_details.measurements.hand,
     order.graduation_details.has_cap ? "قبعة" : "",
+    order.service_details.province,
+    order.service_details.address,
+    order.service_details.booking_time,
+    order.service_details.venue_type,
+    order.service_details.chair_count,
+    order.service_details.session_location,
+    order.service_details.session_kind,
+    order.service_details.people_count,
+    order.service_details.album_type,
+    order.service_details.page_count,
+    order.service_details.album_size,
+    order.service_details.cover_type,
+    order.service_details.cover_name,
+    order.service_details.university,
+    order.service_details.department,
+    order.service_details.gift_type,
+    order.service_details.recipient_name,
+    order.service_details.occasion_date,
+    order.service_details.gift_message,
   ]
     .join(" ")
     .toLowerCase();
+}
+
+export function getOrderServiceDetailItems(order: OrderRecord) {
+  if (order.service_type === "Koshat") {
+    return [
+      { label: "المحافظة", value: order.service_details.province },
+      { label: "العنوان", value: order.service_details.address },
+      { label: "الوقت", value: order.service_details.booking_time },
+      { label: "داخلية / خارجية", value: order.service_details.venue_type },
+      { label: "عدد الكراسي", value: order.service_details.chair_count },
+      { label: "النقل", value: order.service_details.transport_required ? "مطلوب" : "غير مطلوب" },
+    ].filter((item) => item.value);
+  }
+
+  if (order.service_type === "Session") {
+    return [
+      { label: "وقت الجلسة", value: order.service_details.booking_time },
+      { label: "موقع التصوير", value: order.service_details.session_location },
+      { label: "داخلي / خارجي", value: order.service_details.venue_type },
+      { label: "نوع الجلسة", value: order.service_details.session_kind },
+      { label: "عدد الأشخاص", value: order.service_details.people_count },
+      { label: "الفيديو", value: order.service_details.video_required ? "مطلوب" : "غير مطلوب" },
+    ].filter((item) => item.value);
+  }
+
+  if (order.service_type === "Album") {
+    return [
+      { label: "نوع الألبوم", value: order.service_details.album_type },
+      { label: "عدد الصفحات", value: order.service_details.page_count },
+      { label: "المقاس", value: order.service_details.album_size },
+      { label: "نوع الغلاف", value: order.service_details.cover_type },
+      { label: "اسم الغلاف", value: order.service_details.cover_name },
+    ].filter((item) => item.value);
+  }
+
+  if (order.service_type === "Research") {
+    return [
+      { label: "الجامعة", value: order.service_details.university },
+      { label: "القسم", value: order.service_details.department },
+    ].filter((item) => item.value);
+  }
+
+  if (order.service_type === "Graduation") {
+    return [
+      { label: "المحافظة", value: order.service_details.province },
+      { label: "العنوان", value: order.service_details.address },
+      { label: "الوقت", value: order.service_details.booking_time },
+    ].filter((item) => item.value);
+  }
+
+  if (order.service_type === "Gifts") {
+    return [
+      { label: "المحافظة", value: order.service_details.province },
+      { label: "العنوان", value: order.service_details.address },
+      { label: "نوع الهدية", value: order.service_details.gift_type },
+      { label: "اسم المستلم", value: order.service_details.recipient_name },
+      { label: "تاريخ المناسبة", value: order.service_details.occasion_date },
+      { label: "الرسالة", value: order.service_details.gift_message },
+    ].filter((item) => item.value);
+  }
+
+  return [] as { label: string; value: string }[];
 }
 
 export function buildWhatsAppUrl(order: OrderRecord) {

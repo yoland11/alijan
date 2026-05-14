@@ -9,6 +9,7 @@ import {
   formatDateOnly,
   formatDateTime,
   isCompletionReadyStatus,
+  getOrderServiceDetailItems,
   getResearchCopyLabel,
   getResearchIncludedNotes,
   getStaffFieldLabel,
@@ -250,6 +251,9 @@ function ServiceMetaDetails({ order, mobile = false }: { order: OrderRecord; mob
       lines.push("القبعة: مضافة");
     }
   }
+
+  const serviceDetails = getOrderServiceDetailItems(order);
+  lines.push(...serviceDetails.map((item) => `${item.label}: ${item.value}`));
 
   return (
     <>

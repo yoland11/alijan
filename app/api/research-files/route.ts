@@ -12,13 +12,17 @@ export async function POST(request: Request) {
       .filter((file): file is File => file instanceof File && file.size > 0);
 
     if (!files.length) {
-      return NextResponse.json({ message: "لم يتم اختيار ملفات PDF." }, { status: 400 });
+      return NextResponse.json({ message: "لم يتم اختيار ملفات البحث." }, { status: 400 });
     }
 
     const uploadedFiles = await uploadFilesToStorage(files, {
       prefix: "research-pdfs",
-      allowedMimeTypes: ["application/pdf"],
-      allowedExtensions: ["pdf"],
+      allowedMimeTypes: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ],
+      allowedExtensions: ["pdf", "doc", "docx"],
       maxSizeInMb: 20,
     });
 
@@ -27,7 +31,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "تعذر رفع ملفات PDF." },
+      { message: error instanceof Error ? error.message : "تعذر رفع ملفات البحث." },
       { status: 500 },
     );
   }

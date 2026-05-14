@@ -22,6 +22,7 @@ import {
   formatAmountWithCurrency,
   formatDateOnly,
   formatDateTime,
+  getOrderServiceDetailItems,
   getResearchCopyLabel,
   getResearchIncludedNotes,
   getStaffFieldLabel,
@@ -33,12 +34,14 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
   const researchNotes = getResearchIncludedNotes();
   const isResearch = order.service_type === "Research";
   const isGraduation = order.service_type === "Graduation";
+  const serviceDetailItems = getOrderServiceDetailItems(order);
   const hasServiceMeta =
     order.photographer ||
     (order.service_type === "Album" && order.session_type) ||
     (order.service_type === "Koshat" && order.koshat_type) ||
     isResearch ||
-    isGraduation;
+    isGraduation ||
+    serviceDetailItems.length;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -227,6 +230,14 @@ export function OrderTrackingView({ order }: { order: OrderRecord }) {
                   ]}
                 />
               </div>
+            ) : null}
+
+            {serviceDetailItems.length ? (
+              <DetailListPanel
+                title="بيانات الخدمة"
+                icon={<Package className="h-4 w-4" />}
+                items={serviceDetailItems}
+              />
             ) : null}
 
             <div className="rounded-3xl border border-ajn-line bg-white/[0.03] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">

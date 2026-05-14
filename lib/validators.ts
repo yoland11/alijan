@@ -16,6 +16,7 @@ import {
   calculateRemainingAmount,
   createEmptyGraduationDetails,
   createEmptyResearchDetails,
+  createEmptyServiceDetails,
   normalizeArabicDigits,
   normalizePhone,
   parseAmountValue,
@@ -76,6 +77,30 @@ const graduationDetailsSchema = z.object({
   has_cap: z.boolean().optional().default(false),
 });
 
+const serviceDetailsSchema = z.object({
+  province: textFieldSchema,
+  address: textFieldSchema,
+  booking_time: textFieldSchema,
+  venue_type: textFieldSchema,
+  chair_count: textFieldSchema,
+  transport_required: z.boolean().optional().default(false),
+  session_location: textFieldSchema,
+  session_kind: textFieldSchema,
+  people_count: textFieldSchema,
+  video_required: z.boolean().optional().default(false),
+  album_type: textFieldSchema,
+  page_count: textFieldSchema,
+  album_size: textFieldSchema,
+  cover_type: textFieldSchema,
+  cover_name: textFieldSchema,
+  university: textFieldSchema,
+  department: textFieldSchema,
+  gift_type: textFieldSchema,
+  recipient_name: textFieldSchema,
+  occasion_date: textFieldSchema,
+  gift_message: textFieldSchema,
+});
+
 export const loginSchema = z.object({
   username: z.string().min(3, "اسم المستخدم مطلوب."),
   password: z.string().min(6, "كلمة المرور يجب أن تحتوي على 6 أحرف على الأقل."),
@@ -97,6 +122,7 @@ const baseOrderFields = {
   research_details: researchDetailsSchema.optional().default(createEmptyResearchDetails()),
   research_files: z.array(researchFileSchema).optional().default([]),
   graduation_details: graduationDetailsSchema.optional().default(createEmptyGraduationDetails()),
+  service_details: serviceDetailsSchema.optional().default(createEmptyServiceDetails()),
   booking_date: z.string().min(1, "يرجى تحديد تاريخ الحجز."),
   notes: z.string().max(1500, "الملاحظات طويلة جدًا.").optional().default(""),
 } satisfies Record<string, z.ZodTypeAny>;
@@ -125,6 +151,7 @@ function applyServiceSpecificRules(
     research_details: z.infer<typeof researchDetailsSchema>;
     research_files: z.infer<typeof researchFileSchema>[];
     graduation_details: z.infer<typeof graduationDetailsSchema>;
+    service_details: z.infer<typeof serviceDetailsSchema>;
   },
   context: z.RefinementCtx,
 ) {
@@ -146,44 +173,64 @@ function applyServiceSpecificRules(
         message: "يرجى اختيار كادر تصوير صالح.",
       });
     }
+
+    requireResearchTextField(
+      value.service_details.booking_time,
+      ["service_details", "booking_time"],
+      "يرجى تحديد وقت الجلسة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.session_location,
+      ["service_details", "session_location"],
+      "يرجى إدخال موقع التصوير.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.venue_type,
+      ["service_details", "venue_type"],
+      "يرجى اختيار داخلي أو خارجي.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.session_kind,
+      ["service_details", "session_kind"],
+      "يرجى إدخال نوع الجلسة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.people_count,
+      ["service_details", "people_count"],
+      "يرجى إدخال عدد الأشخاص.",
+      context,
+    );
   }
 
   if (value.service_type === "Album") {
-    if (!value.photographer) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["photographer"],
-        message: "يرجى اختيار اسم الكادر.",
-      });
-    } else if (
-      !PHOTOGRAPHER_OPTIONS.includes(
-        value.photographer as (typeof PHOTOGRAPHER_OPTIONS)[number],
-      )
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["photographer"],
-        message: "يرجى اختيار اسم كادر صالح.",
-      });
-    }
-
-    if (!value.session_type) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["session_type"],
-        message: "يرجى اختيار نوع الجلسة.",
-      });
-    } else if (
-      !ALBUM_SESSION_TYPES.includes(
-        value.session_type as (typeof ALBUM_SESSION_TYPES)[number],
-      )
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["session_type"],
-        message: "يرجى اختيار نوع جلسة صالح.",
-      });
-    }
+    requireResearchTextField(
+      value.service_details.album_type,
+      ["service_details", "album_type"],
+      "يرجى إدخال نوع الألبوم.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.page_count,
+      ["service_details", "page_count"],
+      "يرجى إدخال عدد الصفحات.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.album_size,
+      ["service_details", "album_size"],
+      "يرجى إدخال المقاس.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.cover_type,
+      ["service_details", "cover_type"],
+      "يرجى إدخال نوع الغلاف.",
+      context,
+    );
   }
 
   if (value.service_type === "Koshat") {
@@ -202,6 +249,37 @@ function applyServiceSpecificRules(
         message: "يرجى اختيار نوع كوشة صالح.",
       });
     }
+
+    requireResearchTextField(
+      value.service_details.province,
+      ["service_details", "province"],
+      "يرجى إدخال المحافظة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.address,
+      ["service_details", "address"],
+      "يرجى إدخال العنوان.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.booking_time,
+      ["service_details", "booking_time"],
+      "يرجى تحديد وقت الحجز.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.venue_type,
+      ["service_details", "venue_type"],
+      "يرجى اختيار داخلية أو خارجية.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.chair_count,
+      ["service_details", "chair_count"],
+      "يرجى إدخال عدد الكراسي.",
+      context,
+    );
   }
 
   if (value.service_type === "Research") {
@@ -235,6 +313,18 @@ function applyServiceSpecificRules(
       "يرجى تحديد تاريخ التسليم.",
       context,
     );
+    requireResearchTextField(
+      value.service_details.university,
+      ["service_details", "university"],
+      "يرجى إدخال الجامعة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.department,
+      ["service_details", "department"],
+      "يرجى إدخال القسم.",
+      context,
+    );
 
     if (!value.research_details.binding_type) {
       context.addIssue({
@@ -266,6 +356,25 @@ function applyServiceSpecificRules(
   }
 
   if (value.service_type === "Graduation") {
+    requireResearchTextField(
+      value.service_details.province,
+      ["service_details", "province"],
+      "يرجى إدخال المحافظة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.address,
+      ["service_details", "address"],
+      "يرجى إدخال العنوان.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.booking_time,
+      ["service_details", "booking_time"],
+      "يرجى تحديد وقت الحجز.",
+      context,
+    );
+
     if (!value.graduation_details.package_type) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
@@ -363,6 +472,39 @@ function applyServiceSpecificRules(
       context,
     );
   }
+
+  if (value.service_type === "Gifts") {
+    requireResearchTextField(
+      value.service_details.province,
+      ["service_details", "province"],
+      "يرجى إدخال المحافظة.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.address,
+      ["service_details", "address"],
+      "يرجى إدخال العنوان.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.gift_type,
+      ["service_details", "gift_type"],
+      "يرجى إدخال نوع الهدية.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.recipient_name,
+      ["service_details", "recipient_name"],
+      "يرجى إدخال اسم المستلم.",
+      context,
+    );
+    requireResearchTextField(
+      value.service_details.occasion_date,
+      ["service_details", "occasion_date"],
+      "يرجى تحديد تاريخ المناسبة.",
+      context,
+    );
+  }
 }
 
 export const orderSchema = z
@@ -415,11 +557,18 @@ export const orderSchema = z
             ...value.graduation_details,
           }
         : createEmptyGraduationDetails(),
+    service_details: {
+      ...createEmptyServiceDetails(),
+      ...value.service_details,
+    },
     remaining_amount: calculateRemainingAmount(value.total_amount, value.received_amount),
   }));
 
 export const customerBookingSchema = z
-  .object(baseOrderFields)
+  .object({
+    ...baseOrderFields,
+    images: z.array(z.string().url()).optional().default([]),
+  })
   .superRefine((value, context) => {
     applyServiceSpecificRules(value, context);
   })
@@ -452,6 +601,10 @@ export const customerBookingSchema = z
             ...value.graduation_details,
           }
         : createEmptyGraduationDetails(),
+    service_details: {
+      ...createEmptyServiceDetails(),
+      ...value.service_details,
+    },
   }));
 
 export const trackingQuerySchema = z.object({

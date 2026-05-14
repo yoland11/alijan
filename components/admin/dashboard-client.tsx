@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Filter, Plus, Search } from "lucide-react";
+import {
+  BarChart3,
+  Boxes,
+  ClipboardList,
+  Filter,
+  ImageIcon,
+  Plus,
+  Search,
+  Settings2,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ShopCatalogManager } from "@/components/admin/shop-catalog-manager";
@@ -45,6 +56,15 @@ export function DashboardClient() {
   const [statusFilter, setStatusFilter] = useState<(typeof DASHBOARD_STATUS_FILTERS)[number]>("الكل");
   const [modalOpen, setModalOpen] = useState(false);
   const [activeOrder, setActiveOrder] = useState<OrderRecord | null>(null);
+  const adminSections = [
+    { value: "orders", label: "الطلبات", icon: ClipboardList },
+    { value: "catalog", label: "المنتجات", icon: Boxes },
+    { value: "shopOrders", label: "طلبات المتجر", icon: ShoppingBag },
+    { value: "analytics", label: "الإحصائيات", icon: BarChart3 },
+    { value: "drivers", label: "المندوبون", icon: Truck },
+    { value: "portfolio", label: "أعمالنا", icon: ImageIcon },
+    { value: "settings", label: "الإعدادات", icon: Settings2 },
+  ] as const;
 
   const refreshOrders = useCallback(async () => {
     try {
@@ -250,8 +270,9 @@ export function DashboardClient() {
           <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay p-5 sm:p-10">
             <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white sm:text-5xl">إدارة الحجوزات والطلبات</h1>
-                <p className="mt-2 text-sm text-ajn-muted">لوحة AJN</p>
+                <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-ajn-goldSoft">AJN ADMIN</p>
+                <h1 className="text-3xl font-bold text-white sm:text-5xl">لوحة الإدارة</h1>
+                <p className="mt-2 text-sm text-ajn-muted">الحجوزات والمتجر والأعمال</p>
               </div>
 
               <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -271,28 +292,12 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="mb-6 flex gap-3 overflow-x-auto pb-1">
-              <SectionTab active={adminSection === "orders"} onClick={() => setAdminSection("orders")}>
-                الطلبات
-              </SectionTab>
-              <SectionTab active={adminSection === "catalog"} onClick={() => setAdminSection("catalog")}>
-                إدارة الخدمات والمنتجات
-              </SectionTab>
-              <SectionTab active={adminSection === "shopOrders"} onClick={() => setAdminSection("shopOrders")}>
-                طلبات المتجر
-              </SectionTab>
-              <SectionTab active={adminSection === "analytics"} onClick={() => setAdminSection("analytics")}>
-                الإحصائيات
-              </SectionTab>
-              <SectionTab active={adminSection === "drivers"} onClick={() => setAdminSection("drivers")}>
-                المندوبون
-              </SectionTab>
-              <SectionTab active={adminSection === "portfolio"} onClick={() => setAdminSection("portfolio")}>
-                إدارة أعمالنا
-              </SectionTab>
-              <SectionTab active={adminSection === "settings"} onClick={() => setAdminSection("settings")}>
-                إعدادات الدفع والتوصيل
-              </SectionTab>
+            <div className="mb-6 flex gap-3 overflow-x-auto pb-1 xl:hidden">
+              {adminSections.map(({ value, label }) => (
+                <SectionTab key={value} active={adminSection === value} onClick={() => setAdminSection(value)}>
+                  {label}
+                </SectionTab>
+              ))}
             </div>
 
             {adminSection === "orders" ? (
@@ -329,78 +334,98 @@ export function DashboardClient() {
             ) : null}
           </AnimatedServicePanel>
 
-          {adminSection === "orders" ? (
-            <>
-              <section className="sticky-shell surface-panel p-5 sm:p-7">
-                <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">بحث</h2>
-                  </div>
-                </div>
+          <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-start">
+            <aside className="surface-panel hidden p-4 xl:sticky xl:top-28 xl:block">
+              <p className="mb-4 text-xs font-semibold tracking-[0.22em] text-ajn-goldSoft">SECTIONS</p>
+              <div className="space-y-2">
+                {adminSections.map(({ value, label, icon: Icon }) => (
+                  <SidebarSectionButton
+                    key={value}
+                    active={adminSection === value}
+                    onClick={() => setAdminSection(value)}
+                    icon={<Icon className="h-4.5 w-4.5" />}
+                  >
+                    {label}
+                  </SidebarSectionButton>
+                ))}
+              </div>
+            </aside>
 
-                <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ajn-muted" />
-                    <Input
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="بحث"
-                      className="pr-11"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <Filter className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ajn-muted" />
-                    <Select
-                      value={statusFilter}
-                      onChange={(event) =>
-                        setStatusFilter(event.target.value as (typeof DASHBOARD_STATUS_FILTERS)[number])
-                      }
-                      className="pr-11"
-                    >
-                      {DASHBOARD_STATUS_FILTERS.map((status) => (
-                        <option key={status} value={status} className="bg-black">
-                          {getDashboardFilterLabel(status)}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                </div>
-              </section>
-
-              {loading ? (
-                <section className="grid gap-4 xl:grid-cols-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="surface-panel p-5">
-                      <div className="shimmer-skeleton mb-4 h-6 w-32 rounded-full" />
-                      <div className="shimmer-skeleton mb-3 h-4 w-48 rounded-full" />
-                      <div className="shimmer-skeleton mb-3 h-4 w-full rounded-full" />
-                      <div className="shimmer-skeleton h-24 rounded-[24px]" />
+            <div className="space-y-6">
+              {adminSection === "orders" ? (
+                <>
+                  <section className="sticky-shell surface-panel p-5 sm:p-7">
+                    <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">بحث</h2>
+                      </div>
                     </div>
-                  ))}
-                </section>
-              ) : (
-                <OrdersTable
-                  orders={filteredOrders}
-                  onEdit={(order) => {
-                    setActiveOrder(order);
-                    setModalOpen(true);
-                  }}
-                  onDelete={deleteOrder}
-                  onTrackingWhatsApp={openCustomerWhatsApp}
-                  onCompletionWhatsApp={openCompletedOrderWhatsApp}
-                  onPrintInvoice={openInvoicePrint}
-                />
-              )}
-            </>
-          ) : null}
 
-          {adminSection === "catalog" ? <ShopCatalogManager /> : null}
-          {adminSection === "shopOrders" ? <ShopOrdersManager /> : null}
-          {adminSection === "analytics" ? <ShopAnalyticsManager /> : null}
-          {adminSection === "drivers" ? <DeliveryAgentsManager /> : null}
-          {adminSection === "portfolio" ? <PortfolioManager /> : null}
-          {adminSection === "settings" ? <ShopSettingsManager /> : null}
+                    <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ajn-muted" />
+                        <Input
+                          value={searchTerm}
+                          onChange={(event) => setSearchTerm(event.target.value)}
+                          placeholder="بحث"
+                          className="pr-11"
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <Filter className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ajn-muted" />
+                        <Select
+                          value={statusFilter}
+                          onChange={(event) =>
+                            setStatusFilter(event.target.value as (typeof DASHBOARD_STATUS_FILTERS)[number])
+                          }
+                          className="pr-11"
+                        >
+                          {DASHBOARD_STATUS_FILTERS.map((status) => (
+                            <option key={status} value={status} className="bg-black">
+                              {getDashboardFilterLabel(status)}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                    </div>
+                  </section>
+
+                  {loading ? (
+                    <section className="grid gap-4 xl:grid-cols-2">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="surface-panel p-5">
+                          <div className="shimmer-skeleton mb-4 h-6 w-32 rounded-full" />
+                          <div className="shimmer-skeleton mb-3 h-4 w-48 rounded-full" />
+                          <div className="shimmer-skeleton mb-3 h-4 w-full rounded-full" />
+                          <div className="shimmer-skeleton h-24 rounded-[24px]" />
+                        </div>
+                      ))}
+                    </section>
+                  ) : (
+                    <OrdersTable
+                      orders={filteredOrders}
+                      onEdit={(order) => {
+                        setActiveOrder(order);
+                        setModalOpen(true);
+                      }}
+                      onDelete={deleteOrder}
+                      onTrackingWhatsApp={openCustomerWhatsApp}
+                      onCompletionWhatsApp={openCompletedOrderWhatsApp}
+                      onPrintInvoice={openInvoicePrint}
+                    />
+                  )}
+                </>
+              ) : null}
+
+              {adminSection === "catalog" ? <ShopCatalogManager /> : null}
+              {adminSection === "shopOrders" ? <ShopOrdersManager /> : null}
+              {adminSection === "analytics" ? <ShopAnalyticsManager /> : null}
+              {adminSection === "drivers" ? <DeliveryAgentsManager /> : null}
+              {adminSection === "portfolio" ? <PortfolioManager /> : null}
+              {adminSection === "settings" ? <ShopSettingsManager /> : null}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -440,6 +465,33 @@ function SectionTab({
       }`}
     >
       {children}
+    </button>
+  );
+}
+
+function SidebarSectionButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 text-right text-sm font-semibold transition ${
+        active
+          ? "border-ajn-gold/35 bg-ajn-gold/[0.12] text-ajn-goldSoft"
+          : "border-ajn-line bg-white/[0.03] text-white hover:bg-white/[0.06]"
+      }`}
+    >
+      <span className="text-ajn-goldSoft">{icon}</span>
+      <span>{children}</span>
     </button>
   );
 }

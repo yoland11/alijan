@@ -52,9 +52,11 @@ export function OurWorkPageClient() {
       <div className="section-shell space-y-7">
         <HomeLinkButton />
 
-        <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay p-5 sm:p-8">
+        <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay overflow-hidden p-5 sm:p-8">
           <div className="space-y-4">
-            <h1 className="text-3xl font-bold text-white sm:text-4xl">أعمالنا</h1>
+            <p className="text-xs font-semibold tracking-[0.26em] text-ajn-goldSoft">AJN WORKS</p>
+            <h1 className="text-3xl font-bold text-white sm:text-5xl">أعمالنا</h1>
+            <p className="max-w-2xl text-sm leading-7 text-ajn-muted">صور وفيديوهات مرتبة من أعمال AJN.</p>
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
                 <button
@@ -86,20 +88,20 @@ export function OurWorkPageClient() {
         ) : filteredEntries.length ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredEntries.map((entry) => (
-              <div key={entry.id} className="surface-panel glass-hover overflow-hidden p-4">
+              <div key={entry.id} className="surface-panel glass-hover overflow-hidden rounded-[30px] border border-white/8 p-4">
                 {entry.media_type === "image" ? (
                   <PreviewImage
                     src={buildProductImageProxyUrl(entry.thumbnail_url || entry.media_url)}
                     previewSrc={buildProductImageProxyUrl(entry.media_url)}
                     alt={entry.title}
                     onPreviewRequest={(image) => setActivePreviewImage(image)}
-                    containerClassName="h-64 rounded-[24px] bg-black/20 p-3"
+                    containerClassName="h-72 rounded-[24px] bg-black/20 p-3"
                     imageClassName="object-contain"
                   />
                 ) : (
                   <button
                     type="button"
-                    className="group relative flex h-64 w-full items-center justify-center overflow-hidden rounded-[24px] border border-white/8 bg-black/35"
+                    className="group relative flex h-72 w-full items-center justify-center overflow-hidden rounded-[24px] border border-white/8 bg-black/35"
                     onClick={() => setActiveVideo(entry)}
                   >
                     <PreviewImage

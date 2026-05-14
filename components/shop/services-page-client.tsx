@@ -324,11 +324,14 @@ export function ServicesPageClient() {
       <div className="section-shell space-y-7">
         <HomeLinkButton />
 
-        <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay p-5 sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white sm:text-4xl">خدماتنا</h1>
+        <AnimatedServicePanel className="sticky-shell surface-panel-strong noise-overlay overflow-hidden p-5 sm:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-3">
+              <p className="text-xs font-semibold tracking-[0.26em] text-ajn-goldSoft">AJN STORE</p>
+              <h1 className="text-3xl font-bold text-white sm:text-5xl">المتجر</h1>
+              <p className="max-w-xl text-sm leading-7 text-ajn-muted">منتجات وتجهيزات ضمن عرض مرتب وواضح.</p>
             </div>
+
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/account"
@@ -346,7 +349,7 @@ export function ServicesPageClient() {
               </Link>
               <Link
                 href="/cart"
-                className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-line bg-white/[0.05] px-4 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+                className="inline-flex h-11 items-center gap-2 rounded-2xl border border-ajn-gold/24 bg-ajn-gold/10 px-4 text-sm font-semibold text-white transition hover:bg-ajn-gold/14"
               >
                 <ShoppingCart className="h-4 w-4 text-ajn-gold" />
                 السلة
@@ -399,7 +402,7 @@ export function ServicesPageClient() {
                 >
                   <Link
                     href={`/services?main=${encodeURIComponent(category.slug)}`}
-                    className="surface-panel noise-overlay flex h-full cursor-pointer flex-col p-5 text-right transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:border-ajn-gold/45 hover:bg-white/[0.05] hover:shadow-[0_24px_60px_rgba(212,175,55,0.12)]"
+                    className="surface-panel noise-overlay flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border border-white/8 p-4 text-right transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/45 hover:bg-white/[0.05] hover:shadow-[0_24px_60px_rgba(212,175,55,0.12)]"
                   >
                     <PreviewImage
                       src={buildProductImageProxyUrl(category.thumbnail_url || category.image_url)}
@@ -407,7 +410,7 @@ export function ServicesPageClient() {
                       interactive={false}
                       priority={catalog.categories.indexOf(category) < 4}
                       sizes="(max-width: 640px) 92vw, (max-width: 1280px) 48vw, 25vw"
-                      containerClassName="mb-5 h-44 w-full rounded-[24px] border border-white/6 bg-black/30 p-4"
+                      containerClassName="mb-5 h-52 w-full rounded-[26px] border border-white/6 bg-black/30 p-4"
                       imageClassName="object-contain"
                       fallback={
                         <div className="flex h-full w-full items-center justify-center text-ajn-gold">
@@ -416,7 +419,10 @@ export function ServicesPageClient() {
                       }
                     />
                     <div className="mt-auto flex items-center justify-between gap-3">
-                      <h2 className="text-2xl font-bold text-white">{category.name}</h2>
+                      <div>
+                        <h2 className="text-2xl font-bold text-white">{category.name}</h2>
+                        <p className="mt-1 text-xs text-ajn-muted">استكشف التفاصيل</p>
+                      </div>
                       <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-ajn-gold/25 bg-ajn-gold/10 text-ajn-gold transition duration-300 group-hover:border-ajn-gold/45 group-hover:bg-ajn-gold/14">
                         <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
                       </span>
@@ -445,7 +451,7 @@ export function ServicesPageClient() {
                 >
                   <Link
                     href={`/services?main=${encodeURIComponent(rootCategory.slug)}&sub=${encodeURIComponent(category.slug)}`}
-                    className="surface-panel noise-overlay flex h-full cursor-pointer flex-col p-5 text-right transition duration-300 hover:-translate-y-1 hover:scale-[1.015] hover:border-ajn-gold/45 hover:bg-white/[0.05] hover:shadow-[0_24px_60px_rgba(212,175,55,0.12)]"
+                    className="surface-panel noise-overlay flex h-full cursor-pointer flex-col overflow-hidden rounded-[30px] border border-white/8 p-4 text-right transition duration-300 hover:-translate-y-1 hover:border-ajn-gold/45 hover:bg-white/[0.05] hover:shadow-[0_24px_60px_rgba(212,175,55,0.12)]"
                   >
                     <PreviewImage
                       src={buildProductImageProxyUrl(category.thumbnail_url || category.image_url)}
@@ -453,7 +459,7 @@ export function ServicesPageClient() {
                       interactive={false}
                       priority={rootCategory.children.indexOf(category) < 4}
                       sizes="(max-width: 640px) 92vw, (max-width: 1280px) 48vw, 25vw"
-                      containerClassName="mb-5 h-40 w-full rounded-[22px] border border-white/6 bg-black/25 p-4"
+                      containerClassName="mb-5 h-48 w-full rounded-[24px] border border-white/6 bg-black/25 p-4"
                       imageClassName="object-contain"
                       fallback={
                         <div className="flex h-full w-full items-center justify-center text-ajn-gold">
@@ -462,7 +468,10 @@ export function ServicesPageClient() {
                       }
                     />
                     <div className="mt-auto flex items-center justify-between gap-3">
-                      <h3 className="text-xl font-bold text-white">{category.name}</h3>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">{category.name}</h3>
+                        <p className="mt-1 text-xs text-ajn-muted">عرض المنتجات</p>
+                      </div>
                       <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-ajn-gold/25 bg-ajn-gold/10 text-ajn-gold transition duration-300 group-hover:border-ajn-gold/45 group-hover:bg-ajn-gold/14">
                         <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
                       </span>
@@ -510,7 +519,7 @@ export function ServicesPageClient() {
                     return (
                       <div
                         key={product.id}
-                        className="group surface-panel glass-hover overflow-hidden [transform-style:preserve-3d]"
+                        className="group surface-panel overflow-hidden rounded-[30px] border border-white/8 [transform-style:preserve-3d]"
                       >
                         <div className="relative">
                           <PreviewImage
@@ -521,7 +530,7 @@ export function ServicesPageClient() {
                             alt={product.name}
                             priority={index < 4}
                             sizes="(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 25vw"
-                            containerClassName="h-[17.5rem] w-full border-b border-white/6 bg-[radial-gradient(circle_at_top,#ffffff12,transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 sm:h-[18.5rem] lg:h-[19rem]"
+                            containerClassName="h-[19rem] w-full border-b border-white/6 bg-[radial-gradient(circle_at_top,#ffffff12,transparent_58%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 sm:h-[20rem] lg:h-[21rem]"
                             imageClassName="transition duration-500"
                             imageStyle={{
                               objectFit: imagePresentation.objectFit,
@@ -579,15 +588,15 @@ export function ServicesPageClient() {
                             </div>
                           </div>
                         </div>
-                        <div className="space-y-3 p-4 sm:p-[18px]">
+                        <div className="space-y-3 p-4 sm:p-5">
                           <div className="space-y-1.5">
-                            <h3 className="text-base font-bold text-white sm:text-lg">{product.name}</h3>
+                            <h3 className="text-lg font-bold text-white">{product.name}</h3>
                             {product.description ? (
                               <p className="line-clamp-2 text-[12px] leading-5 text-ajn-muted sm:text-[13px]">
                                 {product.description}
                               </p>
                             ) : null}
-                            <p className="text-sm font-semibold text-ajn-gold">
+                            <p className="text-base font-semibold text-ajn-gold">
                               {formatAmountWithCurrency(product.price)}
                             </p>
                           </div>
@@ -764,7 +773,7 @@ export function ServicesPageClient() {
                               مشاهدة الفيديو
                             </button>
                           ) : null}
-                          <div className="flex flex-col gap-2.5">
+                          <div className="flex flex-col gap-2.5 pt-1">
                             <QuantityControl
                               className="w-full"
                               size="compact"
@@ -773,7 +782,7 @@ export function ServicesPageClient() {
                               disabled={soldOut}
                             />
                             <Button
-                              className="h-10 w-full rounded-2xl text-sm"
+                              className="h-11 w-full rounded-2xl text-sm"
                               disabled={soldOut}
                               onClick={() =>
                                 addItem(product, getQuantity(product.id), selectedColor, customization)

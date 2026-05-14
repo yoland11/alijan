@@ -56,13 +56,15 @@ export function LoginForm() {
   });
 
   return (
-    <div className="surface-panel-strong noise-overlay mx-auto w-full max-w-md p-8 sm:p-10">
+    <div className="surface-panel-strong noise-overlay mx-auto w-full max-w-md rounded-[34px] border border-ajn-gold/16 bg-black/55 p-7 sm:p-9">
       <div className="mb-8 space-y-4 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-ajn-line bg-white/[0.04] text-ajn-gold">
           <ShieldCheck className="h-8 w-8" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-white">دخول الإدارة</h1>
+          <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-ajn-goldSoft">AJN LUXURY GROUP</p>
+          <h1 className="text-3xl font-bold text-white">لوحة الإدارة</h1>
+          <p className="mt-2 text-sm text-ajn-muted">admin / 123456</p>
         </div>
       </div>
 
@@ -77,9 +79,9 @@ export function LoginForm() {
           {errors.password ? <p className="mt-2 text-sm text-red-300">{errors.password.message}</p> : null}
         </div>
 
-        <Button type="submit" className="h-12 w-full" disabled={isPending}>
+        <Button type="submit" className="h-12 w-full rounded-2xl" disabled={isPending}>
           <LockKeyhole className="h-4 w-4" />
-          {isPending ? "جاري التحقق..." : "دخول الإدارة"}
+          {isPending ? "جاري التحقق..." : "دخول"}
         </Button>
       </form>
     </div>
