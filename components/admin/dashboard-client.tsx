@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   BarChart3,
   Boxes,
+  CalendarClock,
   ClipboardList,
   Filter,
   ImageIcon,
@@ -13,6 +14,9 @@ import {
   Settings2,
   ShoppingBag,
   Truck,
+  UserSquare2,
+  Users2,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,6 +26,12 @@ import { ShopOrdersManager } from "@/components/admin/shop-orders-manager";
 import { ShopAnalyticsManager } from "@/components/admin/shop-analytics-manager";
 import { ShopSettingsManager } from "@/components/admin/shop-settings-manager";
 import { PortfolioManager } from "@/components/admin/portfolio-manager";
+import { OperationsOverviewManager } from "@/components/admin/operations-overview-manager";
+import { BookingCalendarManager } from "@/components/admin/booking-calendar-manager";
+import { InventoryManager } from "@/components/admin/inventory-manager";
+import { FinanceManager } from "@/components/admin/finance-manager";
+import { CustomersManager } from "@/components/admin/customers-manager";
+import { EmployeesManager } from "@/components/admin/employees-manager";
 import { LogoutButton } from "@/components/admin/logout-button";
 import { OrderModal } from "@/components/admin/order-modal";
 import { OrdersTable } from "@/components/admin/orders-table";
@@ -47,8 +57,20 @@ import type { OrderSchema } from "@/lib/validators";
 
 export function DashboardClient() {
   const [adminSection, setAdminSection] = useState<
-    "orders" | "catalog" | "shopOrders" | "analytics" | "drivers" | "portfolio" | "settings"
-  >("orders");
+    | "overview"
+    | "calendar"
+    | "orders"
+    | "catalog"
+    | "inventory"
+    | "shopOrders"
+    | "finance"
+    | "customers"
+    | "staff"
+    | "analytics"
+    | "drivers"
+    | "portfolio"
+    | "settings"
+  >("overview");
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -57,9 +79,15 @@ export function DashboardClient() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeOrder, setActiveOrder] = useState<OrderRecord | null>(null);
   const adminSections = [
+    { value: "overview", label: "النظرة العامة", icon: BarChart3 },
+    { value: "calendar", label: "التقويم", icon: CalendarClock },
     { value: "orders", label: "الطلبات", icon: ClipboardList },
     { value: "catalog", label: "المنتجات", icon: Boxes },
+    { value: "inventory", label: "المخزون", icon: Boxes },
     { value: "shopOrders", label: "طلبات المتجر", icon: ShoppingBag },
+    { value: "finance", label: "الحسابات", icon: Wallet },
+    { value: "customers", label: "العملاء", icon: Users2 },
+    { value: "staff", label: "الموظفون", icon: UserSquare2 },
     { value: "analytics", label: "الإحصائيات", icon: BarChart3 },
     { value: "drivers", label: "المندوبون", icon: Truck },
     { value: "portfolio", label: "أعمالنا", icon: ImageIcon },
@@ -272,7 +300,7 @@ export function DashboardClient() {
               <div>
                 <p className="mb-2 text-xs font-semibold tracking-[0.24em] text-ajn-goldSoft">AJN ADMIN</p>
                 <h1 className="text-3xl font-bold text-white sm:text-5xl">لوحة الإدارة</h1>
-                <p className="mt-2 text-sm text-ajn-muted">الحجوزات والمتجر والأعمال</p>
+                <p className="mt-2 text-sm text-ajn-muted">الحجوزات والمخزون والعملاء والحسابات</p>
               </div>
 
               <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -352,6 +380,8 @@ export function DashboardClient() {
             </aside>
 
             <div className="space-y-6">
+              {adminSection === "overview" ? <OperationsOverviewManager /> : null}
+              {adminSection === "calendar" ? <BookingCalendarManager /> : null}
               {adminSection === "orders" ? (
                 <>
                   <section className="sticky-shell surface-panel p-5 sm:p-7">
@@ -419,7 +449,11 @@ export function DashboardClient() {
               ) : null}
 
               {adminSection === "catalog" ? <ShopCatalogManager /> : null}
+              {adminSection === "inventory" ? <InventoryManager /> : null}
               {adminSection === "shopOrders" ? <ShopOrdersManager /> : null}
+              {adminSection === "finance" ? <FinanceManager /> : null}
+              {adminSection === "customers" ? <CustomersManager /> : null}
+              {adminSection === "staff" ? <EmployeesManager /> : null}
               {adminSection === "analytics" ? <ShopAnalyticsManager /> : null}
               {adminSection === "drivers" ? <DeliveryAgentsManager /> : null}
               {adminSection === "portfolio" ? <PortfolioManager /> : null}
